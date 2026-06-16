@@ -1,47 +1,44 @@
-# OngeaLabs — African-Language TTS Studio
+# OngeaLabs
 
-OngeaLabs is a lightweight **Text-to-Speech (TTS) studio for African languages** built in **Python + Streamlit**. It supports **single-text speech generation** and **batch line-by-line clip generation**, offers **multiple voice models per language** (Meta MMS + community voices), includes **tone controls** (speed/pitch), saves **WAV outputs** to disk, and keeps an **in-session audio library** for quick playback and reuse.
+Ongea is the Swahili TTS studio owned by OngeaLabs. The React app contains the product UI, company website, speaker library, batch production view, and settings page.
 
-Live app: https://ongealabs.streamlit.app/
+## Run the app
 
----
+```bash
+npm install
+npm run dev
+```
 
-## Features
+Open `http://localhost:5173`.
 
-- **Single Text → Speech**
-  - Generate one-off voice clips from a text prompt.
-- **Batch Clip Generator**
-  - Paste multiple lines and generate clips line-by-line (ideal for voiceovers).
-- **Multi-Voice, Multi-Language**
-  - Select from **Meta MMS** voices and **community voice models** per language.
-- **Tone Controls**
-  - Adjust **speed** and **pitch** to match narration style.
-- **WAV Outputs + Session Library**
-  - Saves generated audio as **.wav** files.
-  - Keeps an **in-session library** for playback and quick access.
-- **Local Fine-Tuning Launcher**
-  - Can launch local fine-tuning using a **Hugging Face dataset** and the **finetune-hf-vits** training repo.
+## Run the Python voice API
 
----
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r backend\requirements.txt
+npm run api
+```
 
-## Demo Note (Streamlit Sleep / Cold Start)
+The frontend calls `http://127.0.0.1:8000/api/voices` for the speaker list and `http://127.0.0.1:8000/api/synthesize` when previewing or exporting. The UI does not include fallback sample voices; only voices returned by the API are shown.
 
-This app is hosted on Streamlit Community Cloud and may go to sleep when idle.  
-If prompted, click **“Wake this app”** and retry after it starts.
+## Connect the existing TTS model
 
----
+The backend uses Meta MMS TTS for Swahili through `facebook/mms-tts-swh`. Keep the returned filename as:
 
-## Tech Stack
+- `ongealabs.wav`
 
-- **Python**
-- **Streamlit**
-- **Meta MMS** (multilingual speech models/voices)
-- **Hugging Face Datasets** (for training data)
-- **finetune-hf-vits** (training workflow)
+The request already passes language, speaker, and tone controls:
 
----
+- `language`
+- `voice`
+- `pace`
+- `pitch`
+- `warmth`
+- `clarity`
 
-## Project Structure (typical)
+Voice options come from `get_available_voices()` in `backend/tts_engine.py`. Configure one of:
 
-> Your repo may differ — adjust this section to match.
-
+- `ONGEA_TTS_VOICES_JSON`: JSON list or `{ "voices": [...] }`
+- `ONGEA_TTS_DB` or `VOICE_DATABASE_PATH`: SQLite database with a `voices`, `tts_voices`, `voice_profiles`, or `speakers` table
+- `backend/voices.json` for local development

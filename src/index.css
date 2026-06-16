@@ -1,0 +1,12 @@
+html {
+  background: #090d10;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(53, 224, 185, 0.28);
+  color: #ffffff;
+}

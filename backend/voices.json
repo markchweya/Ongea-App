@@ -1,0 +1,11 @@
+{
+  "voices": [
+    {
+      "id": "meta-mms-tts-swh",
+      "name": "Meta MMS TTS Swahili",
+      "accent": "Kiswahili",
+      "tone": "Meta TTS model",
+      "clarity": 100
+    }
+  ]
+}
