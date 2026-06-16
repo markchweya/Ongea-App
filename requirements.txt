@@ -1,9 +1,0 @@
-streamlit>=1.36
-numpy
-soundfile
-transformers>=4.41
-huggingface_hub
-safetensors
-librosa
-unidecode
-torch
