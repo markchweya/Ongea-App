@@ -147,6 +147,7 @@ button:disabled {
 .tool-button,
 .transport-play,
 .transport-export,
+.voice-choice,
 .voice-option,
 .batch-row button {
   display: inline-flex;
@@ -377,6 +378,7 @@ button:disabled {
 .secondary-action:hover,
 .icon-button:hover,
 .tool-button:hover,
+.voice-choice:hover,
 .voice-option:hover,
 .batch-row button:hover {
   background: #f3f7f5;
@@ -434,7 +436,7 @@ button:disabled {
 
 .studio-board {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 356px;
+  grid-template-columns: minmax(0, 1fr) 388px;
   gap: 16px;
   align-items: start;
 }
@@ -651,57 +653,156 @@ textarea:focus {
   color: var(--accent);
 }
 
-.voice-hero {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  gap: 14px;
+.voice-count-pill {
+  display: inline-flex;
   align-items: center;
-  margin: 4px 0 16px;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid rgba(7, 135, 105, 0.16);
+  border-radius: 999px;
+  background: #f4faf7;
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-weight: 800;
 }
 
-.voice-ring {
+.active-voice-card {
   display: grid;
-  width: 64px;
-  height: 64px;
-  place-items: center;
-  border: 1px solid rgba(7, 135, 105, 0.2);
-  border-radius: 999px;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 13px;
+  align-items: center;
+  margin: 8px 0 14px;
+  padding: 14px;
+  border: 1px solid rgba(7, 135, 105, 0.18);
+  border-radius: var(--radius);
   background:
-    radial-gradient(circle at center, rgba(7, 135, 105, 0.16), transparent 55%),
-    #f2f8f5;
+    linear-gradient(135deg, rgba(7, 135, 105, 0.1), transparent 58%),
+    #f8fbf9;
+}
+
+.voice-code,
+.voice-choice-code {
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius);
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.voice-code {
+  width: 58px;
+  height: 58px;
+  background: var(--sidebar);
+  color: #ffffff;
+  font-size: 18px;
+}
+
+.active-voice-card h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.active-voice-card p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.voice-choice-list {
+  display: grid;
+  gap: 8px;
+}
+
+.voice-choice {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 20px;
+  justify-content: stretch;
+  width: 100%;
+  min-height: 62px;
+  padding: 9px;
+  border-color: var(--line);
+  background: #ffffff;
+  text-align: left;
+}
+
+.voice-choice.active {
+  border-color: rgba(7, 135, 105, 0.44);
+  background: #eef8f4;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.voice-choice-code {
+  width: 42px;
+  height: 42px;
+  background: #eff4f2;
+  color: var(--accent-dark);
+  font-size: 13px;
+}
+
+.voice-choice.active .voice-choice-code {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.voice-choice-copy {
+  display: grid;
+  gap: 3px;
+  align-content: center;
+}
+
+.voice-choice-copy strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.voice-choice-copy small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voice-choice svg {
+  align-self: center;
   color: var(--accent);
 }
 
-.voice-console h2 {
-  font-size: 20px;
-}
-
-.voice-console p {
-  margin: 7px 0 0;
-  color: var(--muted);
-}
-
-.waveform-signature {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  height: 88px;
-  margin: 12px 0;
-  padding: 14px;
+.model-details {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  margin-top: 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background:
-    linear-gradient(90deg, rgba(7, 135, 105, 0.08) 1px, transparent 1px),
-    #f7faf8;
-  background-size: 18px 100%;
+  background: #fbfdfb;
 }
 
-.waveform-signature span {
-  display: block;
-  flex: 1;
-  max-width: 12px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #54cfb3, var(--accent-dark));
+.model-row {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 38px;
+  align-items: center;
+  padding: 0 11px;
+  border-bottom: 1px solid var(--line);
+}
+
+.model-row:last-child {
+  border-bottom: 0;
+}
+
+.model-row span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.model-row strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tone-slider {

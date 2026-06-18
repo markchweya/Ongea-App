@@ -10,13 +10,11 @@ import {
   FlaskConical,
   Gauge,
   Globe2,
-  Headphones,
   Languages,
   LayoutDashboard,
   ListChecks,
   Mic2,
   Play,
-  Radio,
   Settings,
   Wand2,
 } from 'lucide-react'
@@ -41,7 +39,6 @@ type ToneSettings = Record<ToneKey, number>
 
 const API_BASE_URL = 'http://127.0.0.1:8001'
 const META_TTS_VOICE_ID = 'meta-mms-tts-swh'
-const waveformBars = [36, 64, 42, 78, 50, 92, 58, 74, 46, 82, 40, 66]
 const defaultScriptByLanguage: Record<string, string> = {
   sw: 'Habari, karibu Ongea. Andika maandishi yako ya Kiswahili hapa, kisha tengeneza sauti.',
   de: 'Hallo, willkommen bei Ongea. Schreibe deinen deutschen Text hier und erstelle daraus eine klare Sprachaufnahme.',
@@ -384,6 +381,7 @@ function Studio(props: {
   const estimatedSeconds = Math.max(2, Math.round(wordCount / 2.4))
   const activeLanguage = props.activeVoice?.language || 'sw'
   const languageLabel = props.activeVoice?.accent || props.activeVoice?.locale || 'Kiswahili'
+  const activeModel = props.activeVoice?.model?.replace('facebook/', '') || 'mms-tts-swh'
 
   return (
     <div className="studio-board">
@@ -461,34 +459,61 @@ function Studio(props: {
       <aside className="studio-console">
         <section className="voice-console">
           <div className="console-topline">
-            <span className="eyebrow">Active voice</span>
-            <Headphones size={20} />
+            <span className="eyebrow">Voice and language</span>
+            <span className="voice-count-pill">{props.voices.length || 1} models</span>
           </div>
-          <div className="voice-hero">
-            <div className="voice-ring">
-              <Radio size={30} />
-            </div>
+
+          <div className="active-voice-card">
+            <div className="voice-code">{activeLanguage.toUpperCase()}</div>
             <div>
-              <h2>{props.activeVoice?.name ?? 'Meta MMS TTS Swahili'}</h2>
-              <p>{props.activeVoice?.tone ?? 'Meta TTS model'}</p>
+              <h2>{languageLabel}</h2>
+              <p>{props.activeVoice?.name ?? 'Meta MMS TTS Swahili'}</p>
             </div>
           </div>
-          <div className="waveform-signature" aria-hidden="true">
-            {waveformBars.map((height, index) => (
-              <span key={index} style={{ height: `${height}%` }} />
-            ))}
-          </div>
-          <select value={props.voice || META_TTS_VOICE_ID} onChange={(event) => props.setVoice(event.target.value)}>
+
+          <div className="voice-choice-list" aria-label="Select a voice model">
             {props.voices.length ? (
-              props.voices.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} - {item.accent}
-                </option>
-              ))
+              props.voices.map((item) => {
+                const language = item.language || 'sw'
+                const model = item.model?.replace('facebook/', '') || item.id
+                const isSelected = props.voice === item.id
+                return (
+                  <button className={isSelected ? 'voice-choice active' : 'voice-choice'} key={item.id} onClick={() => props.setVoice(item.id)} type="button">
+                    <span className="voice-choice-code">{language.toUpperCase()}</span>
+                    <span className="voice-choice-copy">
+                      <strong>{item.locale || item.accent}</strong>
+                      <small>{model}</small>
+                    </span>
+                    {isSelected && <CheckCircle2 size={18} />}
+                  </button>
+                )
+              })
             ) : (
-              <option value={META_TTS_VOICE_ID}>Meta MMS TTS Swahili - Kiswahili</option>
+              <button className="voice-choice active" onClick={() => props.setVoice(META_TTS_VOICE_ID)} type="button">
+                <span className="voice-choice-code">SW</span>
+                <span className="voice-choice-copy">
+                  <strong>Kiswahili</strong>
+                  <small>mms-tts-swh</small>
+                </span>
+                <CheckCircle2 size={18} />
+              </button>
             )}
-          </select>
+          </div>
+
+          <div className="model-details">
+            <div className="model-row">
+              <span>Provider</span>
+              <strong>Meta MMS</strong>
+            </div>
+            <div className="model-row">
+              <span>Model</span>
+              <strong>{activeModel}</strong>
+            </div>
+            <div className="model-row">
+              <span>Output</span>
+              <strong>WAV</strong>
+            </div>
+          </div>
         </section>
 
         <section className="tone-console">
