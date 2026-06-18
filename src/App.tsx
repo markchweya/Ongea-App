@@ -2,7 +2,6 @@ import {
   Activity,
   AudioLines,
   BadgeCheck,
-  Building2,
   CheckCircle2,
   Clock3,
   Copy,
@@ -19,14 +18,12 @@ import {
   Play,
   Radio,
   Settings,
-  SlidersHorizontal,
   Wand2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import heroImage from './assets/hero.png'
 import './App.css'
 
-type View = 'labs' | 'studio' | 'batch' | 'voices' | 'settings'
+type View = 'studio' | 'batch' | 'voices' | 'settings'
 type OutputFormat = 'wav'
 type ApiStatus = 'checking' | 'ready' | 'offline'
 type Voice = {
@@ -62,11 +59,6 @@ const sampleScripts = [
 ]
 
 const viewMeta: Record<View, { eyebrow: string; title: string; subtitle: string }> = {
-  labs: {
-    eyebrow: 'OngeaLabs',
-    title: 'Voice tools that feel local from the first word.',
-    subtitle: 'A home for the Ongea product, the Swahili voice studio, and the local voice API behind it.',
-  },
   studio: {
     eyebrow: 'Studio',
     title: 'Swahili voice production',
@@ -109,7 +101,8 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false)
 
   const activeVoice = useMemo(() => voices.find((item) => item.id === voice) ?? null, [voice, voices])
-  const meta = viewMeta[view]
+  const currentView: View = (view as string) in viewMeta ? view : 'studio'
+  const meta = viewMeta[currentView]
 
   useEffect(() => {
     let isMounted = true
@@ -146,7 +139,6 @@ function App() {
   }, [])
 
   const navItems = [
-    { id: 'labs' as const, label: 'Labs', icon: Building2 },
     { id: 'studio' as const, label: 'Studio', icon: LayoutDashboard },
     { id: 'batch' as const, label: 'Queue', icon: ListChecks },
     { id: 'voices' as const, label: 'Voices', icon: Mic2 },
@@ -248,8 +240,8 @@ function App() {
             const Icon = item.icon
             return (
               <button
-                aria-current={view === item.id ? 'page' : undefined}
-                className={view === item.id ? 'nav-item active' : 'nav-item'}
+                aria-current={currentView === item.id ? 'page' : undefined}
+                className={currentView === item.id ? 'nav-item active' : 'nav-item'}
                 key={item.id}
                 onClick={() => setView(item.id)}
                 type="button"
@@ -269,32 +261,22 @@ function App() {
       </aside>
 
       <section className="workspace">
-        <header className={view === 'studio' ? 'topbar studio-topbar' : 'topbar'}>
+        <header className={currentView === 'studio' ? 'topbar studio-topbar' : 'topbar'}>
           <div>
             <span className="eyebrow">{meta.eyebrow}</span>
             <h1>{meta.title}</h1>
             <p>{meta.subtitle}</p>
           </div>
           <div className="topbar-actions">
-            {view === 'studio' ? (
-              <>
-                <StatusBadge status={apiStatus} />
-                <button className="primary-action" disabled={isGenerating} onClick={() => downloadOutput(format)} type="button">
-                  <Download size={18} />
-                  Export WAV
-                </button>
-              </>
-            ) : (
-              <button className="primary-action" onClick={() => setView('studio')} type="button">
-                <AudioLines size={18} />
-                Open Studio
-              </button>
-            )}
+            <StatusBadge status={apiStatus} />
+            <button className="primary-action" disabled={isGenerating} onClick={() => downloadOutput(format)} type="button">
+              <Download size={18} />
+              Export WAV
+            </button>
           </div>
         </header>
 
-        {view === 'labs' && <LabsWebsite onLaunch={() => setView('studio')} onVoices={() => setView('voices')} />}
-        {view === 'studio' && (
+        {currentView === 'studio' && (
           <Studio
             activeVoice={activeVoice}
             cleanScript={cleanScript}
@@ -313,9 +295,9 @@ function App() {
             voices={voices}
           />
         )}
-        {view === 'batch' && <Batch onUseLine={openSampleScript} />}
-        {view === 'voices' && <Voices selectedVoice={voice} setVoice={setVoice} voices={voices} />}
-        {view === 'settings' && <SettingsPanel settings={settings} updateSetting={updateSetting} />}
+        {currentView === 'batch' && <Batch onUseLine={openSampleScript} />}
+        {currentView === 'voices' && <Voices selectedVoice={voice} setVoice={setVoice} voices={voices} />}
+        {currentView === 'settings' && <SettingsPanel settings={settings} updateSetting={updateSetting} />}
       </section>
     </main>
   )
@@ -343,59 +325,6 @@ function BrandMark({ compact }: { compact: boolean }) {
         <strong>Ongea</strong>
         {!compact && <span>by OngeaLabs</span>}
       </div>
-    </div>
-  )
-}
-
-function LabsWebsite({ onLaunch, onVoices }: { onLaunch: () => void; onVoices: () => void }) {
-  const features = [
-    { title: 'Script', copy: 'A focused workspace for Swahili lines, narration, and product prompts.', icon: AudioLines },
-    { title: 'Tune', copy: 'Pace, pitch, warmth, and clarity stay visible while you shape the voice.', icon: SlidersHorizontal },
-    { title: 'Export', copy: 'Every download keeps the predictable OngeaLabs WAV filename.', icon: Download },
-  ]
-
-  return (
-    <div className="labs-page">
-      <section className="hero-band">
-        <div className="hero-copy">
-          <BrandMark compact />
-          <h2>OngeaLabs</h2>
-          <p>Swahili voice tooling for teams building product prompts, lessons, voiceovers, and short-form audio across African markets.</p>
-          <div className="hero-actions">
-            <button className="primary-action" onClick={onLaunch} type="button">
-              <AudioLines size={18} />
-              Open Ongea
-            </button>
-            <button className="secondary-action" onClick={onVoices} type="button">
-              <Mic2 size={18} />
-              View voices
-            </button>
-          </div>
-        </div>
-        <div className="hero-media">
-          <img alt="OngeaLabs voice studio interface preview" src={heroImage} />
-        </div>
-      </section>
-      <section className="signal-board">
-        <div>
-          <span className="eyebrow">Product shape</span>
-          <h3>One focused studio, one local voice route, one reliable export.</h3>
-        </div>
-        <div className="metric-grid">
-          <Metric label="Language" value="Swahili" />
-          <Metric label="Export" value="WAV" />
-          <Metric label="Engine" value="Local API" />
-        </div>
-      </section>
-      <section className="feature-strip">
-        {features.map(({ copy, icon: Icon, title }) => (
-          <article className="feature-tile" key={title}>
-            <Icon size={22} />
-            <h3>{title}</h3>
-            <p>{copy}</p>
-          </article>
-        ))}
-      </section>
     </div>
   )
 }
@@ -714,15 +643,6 @@ function SettingsPanel({
         ))}
       </div>
     </section>
-  )
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
   )
 }
 
