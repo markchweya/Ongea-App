@@ -30,39 +30,55 @@ type Voice = {
   id: string
   name: string
   accent: string
+  language?: string
+  locale?: string
+  model?: string
   tone: string
   clarity?: number | null
 }
 type ToneKey = 'pace' | 'pitch' | 'warmth' | 'clarity'
 type ToneSettings = Record<ToneKey, number>
 
-const API_BASE_URL = 'http://127.0.0.1:8000'
+const API_BASE_URL = 'http://127.0.0.1:8001'
 const META_TTS_VOICE_ID = 'meta-mms-tts-swh'
 const waveformBars = [36, 64, 42, 78, 50, 92, 58, 74, 46, 82, 40, 66]
+const defaultScriptByLanguage: Record<string, string> = {
+  sw: 'Habari, karibu Ongea. Andika maandishi yako ya Kiswahili hapa, kisha tengeneza sauti.',
+  de: 'Hallo, willkommen bei Ongea. Schreibe deinen deutschen Text hier und erstelle daraus eine klare Sprachaufnahme.',
+  fr: 'Bonjour, bienvenue sur Ongea. Ecrivez votre texte en francais ici, puis creez une voix claire et naturelle.',
+}
+const placeholderByLanguage: Record<string, string> = {
+  sw: 'Bandika maandishi ya Kiswahili hapa...',
+  de: 'Schreibe oder fuege deinen deutschen Text hier ein...',
+  fr: 'Ecrivez ou collez votre texte en francais ici...',
+}
 
 const sampleScripts = [
   {
     title: 'Welcome cue',
-    tone: 'Warm product intro',
+    tone: 'Warm Swahili product intro',
+    voiceId: 'meta-mms-tts-swh',
     text: 'Karibu Ongea. Sauti za Afrika, tayari kwa bidhaa zako.',
   },
   {
-    title: 'Daily greeting',
-    tone: 'Natural spoken line',
-    text: 'Habari ya leo? Tengeneza sauti kwa lugha yako kwa sekunde chache.',
+    title: 'German onboarding',
+    tone: 'Clear German product line',
+    voiceId: 'meta-mms-tts-deu',
+    text: 'Willkommen bei Ongea. Erstelle klare Sprachaufnahmen fuer deine naechste Produktidee.',
   },
   {
-    title: 'Team narration',
-    tone: 'Confident brand voice',
-    text: 'OngeaLabs builds voice tools for teams shipping across African markets.',
+    title: 'French narration',
+    tone: 'Friendly French narration',
+    voiceId: 'meta-mms-tts-fra',
+    text: 'Bonjour et bienvenue sur Ongea. Transformez vos idees en voix naturelle en quelques secondes.',
   },
 ]
 
 const viewMeta: Record<View, { eyebrow: string; title: string; subtitle: string }> = {
   studio: {
     eyebrow: 'Studio',
-    title: 'Swahili voice production',
-    subtitle: 'Draft the line, shape the voice, preview the take, export a clean WAV.',
+    title: 'Multilingual voice production',
+    subtitle: 'Draft the line, choose Swahili, German, or French, preview the take, export a clean WAV.',
   },
   batch: {
     eyebrow: 'Queue',
@@ -93,7 +109,7 @@ function App() {
   const [voices, setVoices] = useState<Voice[]>([])
   const [voice, setVoice] = useState(META_TTS_VOICE_ID)
   const [format] = useState<OutputFormat>('wav')
-  const [text, setText] = useState('Habari, karibu Ongea. Andika maandishi yako ya Kiswahili hapa, kisha tengeneza sauti.')
+  const [text, setText] = useState(defaultScriptByLanguage.sw)
   const [settings, setSettings] = useState<ToneSettings>({ pace: 52, pitch: 44, warmth: 68, clarity: 82 })
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewStatus, setPreviewStatus] = useState('Checking voice API...')
@@ -103,6 +119,7 @@ function App() {
   const activeVoice = useMemo(() => voices.find((item) => item.id === voice) ?? null, [voice, voices])
   const currentView: View = (view as string) in viewMeta ? view : 'studio'
   const meta = viewMeta[currentView]
+  const activeLanguage = activeVoice?.language || 'sw'
 
   useEffect(() => {
     let isMounted = true
@@ -149,6 +166,20 @@ function App() {
     setSettings((current) => ({ ...current, [key]: value }))
   }
 
+  function isStarterScript(script: string) {
+    return Object.values(defaultScriptByLanguage).includes(script.trim())
+  }
+
+  function selectVoice(nextVoice: string) {
+    const nextRecord = voices.find((item) => item.id === nextVoice)
+    setVoice(nextVoice)
+    const nextLanguage = nextRecord?.language || 'sw'
+    const nextScript = defaultScriptByLanguage[nextLanguage]
+    if (nextScript && (!text.trim() || isStarterScript(text))) {
+      setText(nextScript)
+    }
+  }
+
   function cleanScript() {
     const polished = text
       .replace(/\r\n/g, '\n')
@@ -170,7 +201,8 @@ function App() {
     }
   }
 
-  function openSampleScript(nextText: string) {
+  function openSampleScript(nextText: string, nextVoice?: string) {
+    if (nextVoice) setVoice(nextVoice)
     setText(nextText)
     setView('studio')
     setPreviewStatus('Script loaded into the studio.')
@@ -187,7 +219,7 @@ function App() {
       body: JSON.stringify({
         text: script,
         voice: selectedVoice,
-        language: 'sw',
+        language: activeLanguage,
         output_format: nextFormat,
         ...settings,
       }),
@@ -287,7 +319,7 @@ function App() {
             previewUrl={previewUrl}
             previewVoice={previewVoice}
             setText={setText}
-            setVoice={setVoice}
+            setVoice={selectVoice}
             settings={settings}
             text={text}
             updateSetting={updateSetting}
@@ -296,7 +328,7 @@ function App() {
           />
         )}
         {currentView === 'batch' && <Batch onUseLine={openSampleScript} />}
-        {currentView === 'voices' && <Voices selectedVoice={voice} setVoice={setVoice} voices={voices} />}
+        {currentView === 'voices' && <Voices selectedVoice={voice} setVoice={selectVoice} voices={voices} />}
         {currentView === 'settings' && <SettingsPanel settings={settings} updateSetting={updateSetting} />}
       </section>
     </main>
@@ -350,6 +382,8 @@ function Studio(props: {
   const wordCount = props.text.trim() ? props.text.trim().split(/\s+/).length : 0
   const lineCount = Math.max(1, props.text.split('\n').length)
   const estimatedSeconds = Math.max(2, Math.round(wordCount / 2.4))
+  const activeLanguage = props.activeVoice?.language || 'sw'
+  const languageLabel = props.activeVoice?.accent || props.activeVoice?.locale || 'Kiswahili'
 
   return (
     <div className="studio-board">
@@ -375,7 +409,7 @@ function Studio(props: {
           <div className="editor-toolbar">
             <div className="mini-chip">
               <Languages size={14} />
-              Kiswahili
+              {languageLabel}
             </div>
             <div className="mini-chip coral">
               <Clock3 size={14} />
@@ -393,8 +427,8 @@ function Studio(props: {
               ))}
             </div>
             <textarea
-              aria-label="Swahili text for TTS"
-              placeholder="Bandika maandishi ya Kiswahili hapa..."
+              aria-label={`${languageLabel} text for TTS`}
+              placeholder={placeholderByLanguage[activeLanguage] ?? 'Write or paste your script here...'}
               value={props.text}
               onChange={(event) => props.setText(event.target.value)}
               spellCheck="false"
@@ -405,7 +439,7 @@ function Studio(props: {
         <div className="studio-metrics">
           <MetricPill icon={AudioLines} label="Characters" value={String(characterCount)} />
           <MetricPill icon={Activity} label="Words" value={String(wordCount)} />
-          <MetricPill icon={BadgeCheck} label="Voice" value={props.activeVoice?.accent ?? 'Kiswahili'} />
+          <MetricPill icon={BadgeCheck} label="Voice" value={languageLabel} />
         </div>
 
         <div className="transport-panel">
@@ -569,7 +603,7 @@ function Voices({ selectedVoice, setVoice, voices }: { selectedVoice: string; se
   )
 }
 
-function Batch({ onUseLine }: { onUseLine: (line: string) => void }) {
+function Batch({ onUseLine }: { onUseLine: (line: string, voiceId?: string) => void }) {
   return (
     <section className="content-panel">
       <div className="panel-title">
@@ -577,7 +611,7 @@ function Batch({ onUseLine }: { onUseLine: (line: string) => void }) {
           <span className="eyebrow">Reusable lines</span>
           <h2>Production queue</h2>
         </div>
-        <button className="primary-action" onClick={() => onUseLine(sampleScripts[0].text)} type="button">
+        <button className="primary-action" onClick={() => onUseLine(sampleScripts[0].text, sampleScripts[0].voiceId)} type="button">
           <Play size={18} />
           Open first line
         </button>
@@ -591,7 +625,7 @@ function Batch({ onUseLine }: { onUseLine: (line: string) => void }) {
               <p>{item.text}</p>
               <small>{item.tone}</small>
             </div>
-            <button className="icon-button" onClick={() => onUseLine(item.text)} title={`Open ${item.title}`} type="button">
+            <button className="icon-button" onClick={() => onUseLine(item.text, item.voiceId)} title={`Open ${item.title}`} type="button">
               <Play size={17} />
             </button>
           </article>

@@ -1,6 +1,6 @@
 # OngeaLabs
 
-Ongea is the Swahili TTS studio owned by OngeaLabs. The React app contains the product UI, company website, speaker library, batch production view, and settings page.
+Ongea is the multilingual TTS studio owned by OngeaLabs. The React app contains the product UI, speaker library, batch production view, and settings page.
 
 ## Run the app
 
@@ -20,11 +20,17 @@ pip install -r backend\requirements.txt
 npm run api
 ```
 
-The frontend calls `http://127.0.0.1:8000/api/voices` for the speaker list and `http://127.0.0.1:8000/api/synthesize` when previewing or exporting. The UI does not include fallback sample voices; only voices returned by the API are shown.
+The frontend calls `http://127.0.0.1:8001/api/voices` for the speaker list and `http://127.0.0.1:8001/api/synthesize` when previewing or exporting. The UI does not include fallback sample voices; only voices returned by the API are shown.
 
-## Connect the existing TTS model
+## Connect the existing TTS models
 
-The backend uses Meta MMS TTS for Swahili through `facebook/mms-tts-swh`. Keep the returned filename as:
+The backend uses Meta MMS TTS for Swahili, German, and French:
+
+- `facebook/mms-tts-swh`
+- `facebook/mms-tts-deu`
+- `facebook/mms-tts-fra`
+
+Keep the returned filename as:
 
 - `ongealabs.wav`
 

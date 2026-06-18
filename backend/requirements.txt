@@ -3,3 +3,4 @@ uvicorn[standard]==0.34.0
 pydantic==2.10.4
 transformers>=4.45.0
 torch>=2.4.0
+scipy>=1.14.0

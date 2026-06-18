@@ -4,6 +4,29 @@
       "id": "meta-mms-tts-swh",
       "name": "Meta MMS TTS Swahili",
       "accent": "Kiswahili",
+      "language": "sw",
+      "locale": "Swahili",
+      "model": "facebook/mms-tts-swh",
+      "tone": "Meta TTS model",
+      "clarity": 100
+    },
+    {
+      "id": "meta-mms-tts-deu",
+      "name": "Meta MMS TTS German",
+      "accent": "Deutsch",
+      "language": "de",
+      "locale": "German",
+      "model": "facebook/mms-tts-deu",
+      "tone": "Meta TTS model",
+      "clarity": 100
+    },
+    {
+      "id": "meta-mms-tts-fra",
+      "name": "Meta MMS TTS French",
+      "accent": "Francais",
+      "language": "fr",
+      "locale": "French",
+      "model": "facebook/mms-tts-fra",
       "tone": "Meta TTS model",
       "clarity": 100
     }
