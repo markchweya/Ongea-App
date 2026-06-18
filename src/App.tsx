@@ -1,16 +1,26 @@
 import {
+  Activity,
   AudioLines,
+  BadgeCheck,
   Building2,
+  CheckCircle2,
+  Clock3,
+  Copy,
   Download,
   FileAudio,
   FlaskConical,
+  Gauge,
   Globe2,
+  Headphones,
+  Languages,
   LayoutDashboard,
   ListChecks,
   Mic2,
   Play,
+  Radio,
   Settings,
   SlidersHorizontal,
+  Wand2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import heroImage from './assets/hero.png'
@@ -31,6 +41,7 @@ type ToneSettings = Record<ToneKey, number>
 
 const API_BASE_URL = 'http://127.0.0.1:8000'
 const META_TTS_VOICE_ID = 'meta-mms-tts-swh'
+const waveformBars = [36, 64, 42, 78, 50, 92, 58, 74, 46, 82, 40, 66]
 
 const sampleScripts = [
   {
@@ -54,27 +65,27 @@ const viewMeta: Record<View, { eyebrow: string; title: string; subtitle: string 
   labs: {
     eyebrow: 'OngeaLabs',
     title: 'Voice tools that feel local from the first word.',
-    subtitle: 'A cleaner home for the Ongea product, the Swahili voice studio, and the local voice API behind it.',
+    subtitle: 'A home for the Ongea product, the Swahili voice studio, and the local voice API behind it.',
   },
   studio: {
-    eyebrow: 'Ongea Studio',
-    title: 'Turn Swahili scripts into ready-to-use audio.',
-    subtitle: 'Write, tune, preview, and export one consistent WAV file from the connected Meta MMS voice.',
+    eyebrow: 'Studio',
+    title: 'Swahili voice production',
+    subtitle: 'Draft the line, shape the voice, preview the take, export a clean WAV.',
   },
   batch: {
-    eyebrow: 'Production queue',
-    title: 'Prepare reusable script lines with less friction.',
-    subtitle: 'Keep common phrases close, then open any line in the studio when it is time to generate.',
+    eyebrow: 'Queue',
+    title: 'Reusable production lines',
+    subtitle: 'Keep frequent prompts and narration snippets close, then open any line in the studio.',
   },
   voices: {
-    eyebrow: 'Speaker library',
-    title: 'Choose the voice before the script becomes sound.',
-    subtitle: 'Only voices returned by the local API are shown here, so the studio stays honest about what can export.',
+    eyebrow: 'Voices',
+    title: 'Speaker library',
+    subtitle: 'Only voices returned by the local API appear here, so export options stay honest.',
   },
   settings: {
-    eyebrow: 'Workspace settings',
-    title: 'Keep the engine profile predictable.',
-    subtitle: 'Review the active backend, output naming, model family, and shared tone defaults.',
+    eyebrow: 'Settings',
+    title: 'Engine profile',
+    subtitle: 'Review backend routing, output naming, model family, and shared tone defaults.',
   },
 }
 
@@ -135,7 +146,7 @@ function App() {
   }, [])
 
   const navItems = [
-    { id: 'labs' as const, label: 'OngeaLabs', icon: Building2 },
+    { id: 'labs' as const, label: 'Labs', icon: Building2 },
     { id: 'studio' as const, label: 'Studio', icon: LayoutDashboard },
     { id: 'batch' as const, label: 'Queue', icon: ListChecks },
     { id: 'voices' as const, label: 'Voices', icon: Mic2 },
@@ -148,8 +159,6 @@ function App() {
 
   function cleanScript() {
     const polished = text
-      .replace(/[“”]/g, '"')
-      .replace(/[‘’]/g, "'")
       .replace(/\r\n/g, '\n')
       .split('\n')
       .map((line) => line.replace(/\s+/g, ' ').trim())
@@ -157,13 +166,22 @@ function App() {
       .join('\n')
 
     setText(polished)
-    setPreviewStatus(polished ? 'Script polished.' : 'Add a script before polishing.')
+    setPreviewStatus(polished ? 'Script polished and ready for preview.' : 'Add a script before polishing.')
+  }
+
+  async function copyScript() {
+    try {
+      await navigator.clipboard.writeText(text)
+      setPreviewStatus('Script copied.')
+    } catch {
+      setPreviewStatus('Unable to copy from this browser context.')
+    }
   }
 
   function openSampleScript(nextText: string) {
     setText(nextText)
     setView('studio')
-    setPreviewStatus('Script loaded.')
+    setPreviewStatus('Script loaded into the studio.')
   }
 
   async function requestSynthesis(nextFormat: OutputFormat) {
@@ -189,7 +207,7 @@ function App() {
   async function downloadOutput(nextFormat: OutputFormat = format) {
     try {
       setIsGenerating(true)
-      setPreviewStatus('Preparing WAV export...')
+      setPreviewStatus('Rendering WAV export...')
       const blob = await requestSynthesis(nextFormat)
 
       const link = document.createElement('a')
@@ -208,7 +226,7 @@ function App() {
   async function previewVoice() {
     try {
       setIsGenerating(true)
-      setPreviewStatus('Generating preview...')
+      setPreviewStatus('Rendering preview take...')
       const blob = await requestSynthesis('wav')
       if (previewUrl) URL.revokeObjectURL(previewUrl)
       const nextUrl = URL.createObjectURL(blob)
@@ -251,7 +269,7 @@ function App() {
       </aside>
 
       <section className="workspace">
-        <header className="topbar">
+        <header className={view === 'studio' ? 'topbar studio-topbar' : 'topbar'}>
           <div>
             <span className="eyebrow">{meta.eyebrow}</span>
             <h1>{meta.title}</h1>
@@ -259,10 +277,13 @@ function App() {
           </div>
           <div className="topbar-actions">
             {view === 'studio' ? (
-              <button className="primary-action" disabled={isGenerating} onClick={() => downloadOutput(format)} type="button">
-                <Download size={18} />
-                Export WAV
-              </button>
+              <>
+                <StatusBadge status={apiStatus} />
+                <button className="primary-action" disabled={isGenerating} onClick={() => downloadOutput(format)} type="button">
+                  <Download size={18} />
+                  Export WAV
+                </button>
+              </>
             ) : (
               <button className="primary-action" onClick={() => setView('studio')} type="button">
                 <AudioLines size={18} />
@@ -277,6 +298,7 @@ function App() {
           <Studio
             activeVoice={activeVoice}
             cleanScript={cleanScript}
+            copyScript={copyScript}
             downloadOutput={downloadOutput}
             isGenerating={isGenerating}
             previewStatus={previewStatus}
@@ -299,6 +321,15 @@ function App() {
   )
 }
 
+function StatusBadge({ status }: { status: ApiStatus }) {
+  return (
+    <div className={`status-badge ${status}`}>
+      <span />
+      {status === 'ready' ? 'API ready' : status === 'checking' ? 'Checking API' : 'API offline'}
+    </div>
+  )
+}
+
 function BrandMark({ compact }: { compact: boolean }) {
   return (
     <div className={compact ? 'brand compact' : 'brand'}>
@@ -318,7 +349,7 @@ function BrandMark({ compact }: { compact: boolean }) {
 
 function LabsWebsite({ onLaunch, onVoices }: { onLaunch: () => void; onVoices: () => void }) {
   const features = [
-    { title: 'Script', copy: 'A calm workspace for Swahili lines, narration, and product prompts.', icon: AudioLines },
+    { title: 'Script', copy: 'A focused workspace for Swahili lines, narration, and product prompts.', icon: AudioLines },
     { title: 'Tune', copy: 'Pace, pitch, warmth, and clarity stay visible while you shape the voice.', icon: SlidersHorizontal },
     { title: 'Export', copy: 'Every download keeps the predictable OngeaLabs WAV filename.', icon: Download },
   ]
@@ -329,7 +360,7 @@ function LabsWebsite({ onLaunch, onVoices }: { onLaunch: () => void; onVoices: (
         <div className="hero-copy">
           <BrandMark compact />
           <h2>OngeaLabs</h2>
-          <p>Friendly Swahili voice tooling for teams building products, lessons, prompts, and short-form audio across African markets.</p>
+          <p>Swahili voice tooling for teams building product prompts, lessons, voiceovers, and short-form audio across African markets.</p>
           <div className="hero-actions">
             <button className="primary-action" onClick={onLaunch} type="button">
               <AudioLines size={18} />
@@ -372,6 +403,7 @@ function LabsWebsite({ onLaunch, onVoices }: { onLaunch: () => void; onVoices: (
 function Studio(props: {
   activeVoice: Voice | null
   cleanScript: () => void
+  copyScript: () => void
   downloadOutput: (format?: OutputFormat) => void | Promise<void>
   isGenerating: boolean
   previewStatus: string
@@ -387,62 +419,102 @@ function Studio(props: {
 }) {
   const characterCount = props.text.length
   const wordCount = props.text.trim() ? props.text.trim().split(/\s+/).length : 0
+  const lineCount = Math.max(1, props.text.split('\n').length)
+  const estimatedSeconds = Math.max(2, Math.round(wordCount / 2.4))
 
   return (
-    <div className="studio-grid">
-      <section className="composer-panel" aria-busy={props.isGenerating}>
-        <div className="panel-title">
+    <div className="studio-board">
+      <section className="script-workbench" aria-busy={props.isGenerating}>
+        <div className="workbench-header">
           <div>
             <span className="eyebrow">Composer</span>
-            <h2>Script</h2>
+            <h2>Script take</h2>
           </div>
-          <div className="output-pill">
-            <FileAudio size={16} />
-            WAV
+          <div className="editor-actions">
+            <button className="tool-button" onClick={props.copyScript} type="button">
+              <Copy size={16} />
+              Copy
+            </button>
+            <button className="tool-button" onClick={props.cleanScript} type="button">
+              <Wand2 size={16} />
+              Polish
+            </button>
           </div>
         </div>
 
-        <textarea
-          aria-label="Swahili text for TTS"
-          placeholder="Bandika maandishi ya Kiswahili hapa..."
-          value={props.text}
-          onChange={(event) => props.setText(event.target.value)}
-          spellCheck="false"
-        />
-
-        <div className="script-meta">
-          <span>{characterCount} characters</span>
-          <span>{wordCount} words</span>
-          <span>{props.activeVoice?.accent ?? 'Kiswahili'}</span>
+        <div className="editor-shell">
+          <div className="editor-toolbar">
+            <div className="mini-chip">
+              <Languages size={14} />
+              Kiswahili
+            </div>
+            <div className="mini-chip coral">
+              <Clock3 size={14} />
+              ~{estimatedSeconds}s
+            </div>
+            <div className="mini-chip indigo">
+              <FileAudio size={14} />
+              WAV
+            </div>
+          </div>
+          <div className="editor-body">
+            <div className="line-gutter" aria-hidden="true">
+              {Array.from({ length: lineCount }).map((_, index) => (
+                <span key={index}>{index + 1}</span>
+              ))}
+            </div>
+            <textarea
+              aria-label="Swahili text for TTS"
+              placeholder="Bandika maandishi ya Kiswahili hapa..."
+              value={props.text}
+              onChange={(event) => props.setText(event.target.value)}
+              spellCheck="false"
+            />
+          </div>
         </div>
 
-        <div className="action-row">
-          <button className="primary-action" disabled={props.isGenerating} onClick={props.previewVoice} type="button">
-            <Play size={18} />
-            Preview
+        <div className="studio-metrics">
+          <MetricPill icon={AudioLines} label="Characters" value={String(characterCount)} />
+          <MetricPill icon={Activity} label="Words" value={String(wordCount)} />
+          <MetricPill icon={BadgeCheck} label="Voice" value={props.activeVoice?.accent ?? 'Kiswahili'} />
+        </div>
+
+        <div className="transport-panel">
+          <button className="transport-play" disabled={props.isGenerating} onClick={props.previewVoice} type="button">
+            <Play size={19} />
+            Preview take
           </button>
-          <button className="secondary-action" onClick={props.cleanScript} type="button">
-            Polish script
-          </button>
-          <button className="secondary-action" disabled={props.isGenerating} onClick={() => props.downloadOutput('wav')} type="button">
+          <div className="transport-status">
+            <span>{props.previewStatus}</span>
+            {props.previewUrl && <audio controls src={props.previewUrl} />}
+          </div>
+          <button className="transport-export" disabled={props.isGenerating} onClick={() => props.downloadOutput('wav')} type="button">
             <Download size={18} />
-            Download WAV
+            Export
           </button>
-        </div>
-        <div className="preview-strip">
-          <span>{props.previewStatus}</span>
-          {props.previewUrl && <audio controls src={props.previewUrl} />}
         </div>
       </section>
 
-      <aside className="right-rail">
-        <section className="voice-card">
-          <div className="speaker-avatar">
-            <AudioLines size={34} />
+      <aside className="studio-console">
+        <section className="voice-console">
+          <div className="console-topline">
+            <span className="eyebrow">Active voice</span>
+            <Headphones size={20} />
           </div>
-          <span className="eyebrow">Active voice</span>
-          <h2>{props.activeVoice?.name ?? 'Meta MMS TTS Swahili'}</h2>
-          <p>{props.activeVoice?.tone ?? 'Meta TTS model'}</p>
+          <div className="voice-hero">
+            <div className="voice-ring">
+              <Radio size={30} />
+            </div>
+            <div>
+              <h2>{props.activeVoice?.name ?? 'Meta MMS TTS Swahili'}</h2>
+              <p>{props.activeVoice?.tone ?? 'Meta TTS model'}</p>
+            </div>
+          </div>
+          <div className="waveform-signature" aria-hidden="true">
+            {waveformBars.map((height, index) => (
+              <span key={index} style={{ height: `${height}%` }} />
+            ))}
+          </div>
           <select value={props.voice || META_TTS_VOICE_ID} onChange={(event) => props.setVoice(event.target.value)}>
             {props.voices.length ? (
               props.voices.map((item) => (
@@ -456,17 +528,10 @@ function Studio(props: {
           </select>
         </section>
 
-        <section className="wave-panel">
-          <span className="eyebrow">Route</span>
-          <p>Preview and export use the same local FastAPI route, so the audio you hear is the audio you download.</p>
-        </section>
-
-        <section className="tuning-panel">
-          <div className="panel-title compact-title">
-            <div>
-              <span className="eyebrow">Tone</span>
-              <h3>Voice feel</h3>
-            </div>
+        <section className="tone-console">
+          <div className="console-topline">
+            <span className="eyebrow">Voice feel</span>
+            <Gauge size={20} />
           </div>
           {toneControls.map((control) => (
             <ToneSlider
@@ -478,7 +543,33 @@ function Studio(props: {
             />
           ))}
         </section>
+
+        <section className="route-console">
+          <CheckCircle2 size={20} />
+          <div>
+            <strong>Same route for preview and export</strong>
+            <p>The audio you hear is rendered by the local FastAPI synthesis endpoint.</p>
+          </div>
+        </section>
       </aside>
+    </div>
+  )
+}
+
+function MetricPill({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof AudioLines
+  label: string
+  value: string
+}) {
+  return (
+    <div className="metric-pill">
+      <Icon size={16} />
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   )
 }
