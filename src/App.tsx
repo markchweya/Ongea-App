@@ -11,13 +11,14 @@ import {
   Play,
   Settings,
   SlidersHorizontal,
-  Upload,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import heroImage from './assets/hero.png'
 import './App.css'
 
 type View = 'labs' | 'studio' | 'batch' | 'voices' | 'settings'
 type OutputFormat = 'wav'
+type ApiStatus = 'checking' | 'ready' | 'offline'
 type Voice = {
   id: string
   name: string
@@ -25,26 +26,79 @@ type Voice = {
   tone: string
   clarity?: number | null
 }
+type ToneKey = 'pace' | 'pitch' | 'warmth' | 'clarity'
+type ToneSettings = Record<ToneKey, number>
 
 const API_BASE_URL = 'http://127.0.0.1:8000'
 const META_TTS_VOICE_ID = 'meta-mms-tts-swh'
 
-const batchItems = [
-  'Karibu Ongea. Sauti za Afrika, tayari kwa bidhaa zako.',
-  'Habari ya leo? Tengeneza sauti kwa lugha yako kwa sekunde chache.',
-  'OngeaLabs builds voice tools for teams shipping across African markets.',
+const sampleScripts = [
+  {
+    title: 'Welcome cue',
+    tone: 'Warm product intro',
+    text: 'Karibu Ongea. Sauti za Afrika, tayari kwa bidhaa zako.',
+  },
+  {
+    title: 'Daily greeting',
+    tone: 'Natural spoken line',
+    text: 'Habari ya leo? Tengeneza sauti kwa lugha yako kwa sekunde chache.',
+  },
+  {
+    title: 'Team narration',
+    tone: 'Confident brand voice',
+    text: 'OngeaLabs builds voice tools for teams shipping across African markets.',
+  },
+]
+
+const viewMeta: Record<View, { eyebrow: string; title: string; subtitle: string }> = {
+  labs: {
+    eyebrow: 'OngeaLabs',
+    title: 'Voice tools that feel local from the first word.',
+    subtitle: 'A cleaner home for the Ongea product, the Swahili voice studio, and the local voice API behind it.',
+  },
+  studio: {
+    eyebrow: 'Ongea Studio',
+    title: 'Turn Swahili scripts into ready-to-use audio.',
+    subtitle: 'Write, tune, preview, and export one consistent WAV file from the connected Meta MMS voice.',
+  },
+  batch: {
+    eyebrow: 'Production queue',
+    title: 'Prepare reusable script lines with less friction.',
+    subtitle: 'Keep common phrases close, then open any line in the studio when it is time to generate.',
+  },
+  voices: {
+    eyebrow: 'Speaker library',
+    title: 'Choose the voice before the script becomes sound.',
+    subtitle: 'Only voices returned by the local API are shown here, so the studio stays honest about what can export.',
+  },
+  settings: {
+    eyebrow: 'Workspace settings',
+    title: 'Keep the engine profile predictable.',
+    subtitle: 'Review the active backend, output naming, model family, and shared tone defaults.',
+  },
+}
+
+const toneControls: { key: ToneKey; label: string; detail: string }[] = [
+  { key: 'pace', label: 'Pace', detail: 'Delivery speed' },
+  { key: 'pitch', label: 'Pitch', detail: 'Voice height' },
+  { key: 'warmth', label: 'Warmth', detail: 'Softness' },
+  { key: 'clarity', label: 'Clarity', detail: 'Definition' },
 ]
 
 function App() {
   const [view, setView] = useState<View>('studio')
   const [voices, setVoices] = useState<Voice[]>([])
   const [voice, setVoice] = useState(META_TTS_VOICE_ID)
-  const [format, setFormat] = useState<OutputFormat>('wav')
+  const [format] = useState<OutputFormat>('wav')
   const [text, setText] = useState('Habari, karibu Ongea. Andika maandishi yako ya Kiswahili hapa, kisha tengeneza sauti.')
-  const [settings, setSettings] = useState({ pace: 52, pitch: 44, warmth: 68, clarity: 82 })
+  const [settings, setSettings] = useState<ToneSettings>({ pace: 52, pitch: 44, warmth: 68, clarity: 82 })
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [previewStatus, setPreviewStatus] = useState('Ready to generate with Meta MMS TTS.')
-  const activeVoice = voices.find((item) => item.id === voice) ?? null
+  const [previewStatus, setPreviewStatus] = useState('Checking voice API...')
+  const [apiStatus, setApiStatus] = useState<ApiStatus>('checking')
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const activeVoice = useMemo(() => voices.find((item) => item.id === voice) ?? null, [voice, voices])
+  const meta = viewMeta[view]
 
   useEffect(() => {
     let isMounted = true
@@ -59,17 +113,21 @@ function App() {
 
         setVoices(nextVoices)
         setVoice((current) => (nextVoices.some((item) => item.id === current) ? current : nextVoices[0]?.id ?? META_TTS_VOICE_ID))
-        setPreviewStatus(nextVoices.length ? 'Meta TTS voice loaded.' : 'Using Meta MMS TTS.')
+        setApiStatus('ready')
+        setPreviewStatus((current) =>
+          current === 'Checking voice API...' || current === 'Voice API is offline.' ? 'Voice ready.' : current,
+        )
       } catch {
         if (!isMounted) return
         setVoices([])
         setVoice(META_TTS_VOICE_ID)
-        setPreviewStatus('Using Meta MMS TTS.')
+        setApiStatus('offline')
+        setPreviewStatus((current) => (current === 'Checking voice API...' || current === 'Voice ready.' ? 'Voice API is offline.' : current))
       }
     }
 
     loadVoices()
-    const retryTimer = window.setInterval(loadVoices, 5000)
+    const retryTimer = window.setInterval(loadVoices, 10000)
     return () => {
       isMounted = false
       window.clearInterval(retryTimer)
@@ -78,24 +136,46 @@ function App() {
 
   const navItems = [
     { id: 'labs' as const, label: 'OngeaLabs', icon: Building2 },
-    { id: 'studio' as const, label: 'Ongea Studio', icon: LayoutDashboard },
-    { id: 'batch' as const, label: 'Batch', icon: ListChecks },
-    { id: 'voices' as const, label: 'Speakers', icon: Mic2 },
+    { id: 'studio' as const, label: 'Studio', icon: LayoutDashboard },
+    { id: 'batch' as const, label: 'Queue', icon: ListChecks },
+    { id: 'voices' as const, label: 'Voices', icon: Mic2 },
     { id: 'settings' as const, label: 'Settings', icon: Settings },
   ]
 
-  function updateSetting(key: keyof typeof settings, value: number) {
+  function updateSetting(key: ToneKey, value: number) {
     setSettings((current) => ({ ...current, [key]: value }))
+  }
+
+  function cleanScript() {
+    const polished = text
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .map((line) => line.replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+      .join('\n')
+
+    setText(polished)
+    setPreviewStatus(polished ? 'Script polished.' : 'Add a script before polishing.')
+  }
+
+  function openSampleScript(nextText: string) {
+    setText(nextText)
+    setView('studio')
+    setPreviewStatus('Script loaded.')
   }
 
   async function requestSynthesis(nextFormat: OutputFormat) {
     const selectedVoice = voice || META_TTS_VOICE_ID
+    const script = text.trim()
+    if (!script) throw new Error('Add a script before generating audio.')
 
     const response = await fetch(`${API_BASE_URL}/api/synthesize`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        text,
+        text: script,
         voice: selectedVoice,
         language: 'sw',
         output_format: nextFormat,
@@ -107,31 +187,37 @@ function App() {
   }
 
   async function downloadOutput(nextFormat: OutputFormat = format) {
-    const extension = 'wav'
     try {
+      setIsGenerating(true)
+      setPreviewStatus('Preparing WAV export...')
       const blob = await requestSynthesis(nextFormat)
 
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
-      link.download = `ongealabs.${extension}`
+      link.download = 'ongealabs.wav'
       link.click()
       URL.revokeObjectURL(link.href)
       setPreviewStatus(`Exported with ${activeVoice?.name ?? 'Meta MMS TTS Swahili'}.`)
     } catch (error) {
       setPreviewStatus(error instanceof Error ? error.message : 'Unable to export from the TTS engine.')
+    } finally {
+      setIsGenerating(false)
     }
   }
 
   async function previewVoice() {
     try {
-      setPreviewStatus('Generating preview with Meta MMS TTS...')
+      setIsGenerating(true)
+      setPreviewStatus('Generating preview...')
       const blob = await requestSynthesis('wav')
       if (previewUrl) URL.revokeObjectURL(previewUrl)
       const nextUrl = URL.createObjectURL(blob)
       setPreviewUrl(nextUrl)
-      setPreviewStatus('Preview loaded from the Python TTS route.')
+      setPreviewStatus('Preview ready.')
     } catch (error) {
       setPreviewStatus(error instanceof Error ? error.message : 'Unable to generate preview from the TTS engine.')
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -144,6 +230,7 @@ function App() {
             const Icon = item.icon
             return (
               <button
+                aria-current={view === item.id ? 'page' : undefined}
                 className={view === item.id ? 'nav-item active' : 'nav-item'}
                 key={item.id}
                 onClick={() => setView(item.id)}
@@ -155,47 +242,56 @@ function App() {
             )
           })}
         </nav>
-        <div className="system-card">
-          <p>Engine</p>
-          <strong>Python TTS</strong>
-          <span>Voice IDs preserved</span>
+        <div className={`system-card ${apiStatus}`}>
+          <span className="status-dot" aria-hidden="true" />
+          <p>Voice API</p>
+          <strong>{apiStatus === 'ready' ? 'Connected' : apiStatus === 'checking' ? 'Checking' : 'Offline'}</strong>
+          <span>{activeVoice?.name ?? 'Meta MMS TTS Swahili'}</span>
         </div>
       </aside>
 
       <section className="workspace">
         <header className="topbar">
           <div>
-            <span className="eyebrow">Ongea by OngeaLabs</span>
-            <h1>{view === 'labs' ? 'Voice infrastructure for African languages' : 'Swahili text to speech'}</h1>
+            <span className="eyebrow">{meta.eyebrow}</span>
+            <h1>{meta.title}</h1>
+            <p>{meta.subtitle}</p>
           </div>
           <div className="topbar-actions">
-            <button className="primary-action" onClick={() => downloadOutput(format)} type="button">
-              <Download size={18} />
-              Export {format.toUpperCase()}
-            </button>
+            {view === 'studio' ? (
+              <button className="primary-action" disabled={isGenerating} onClick={() => downloadOutput(format)} type="button">
+                <Download size={18} />
+                Export WAV
+              </button>
+            ) : (
+              <button className="primary-action" onClick={() => setView('studio')} type="button">
+                <AudioLines size={18} />
+                Open Studio
+              </button>
+            )}
           </div>
         </header>
 
-        {view === 'labs' && <LabsWebsite onLaunch={() => setView('studio')} />}
+        {view === 'labs' && <LabsWebsite onLaunch={() => setView('studio')} onVoices={() => setView('voices')} />}
         {view === 'studio' && (
           <Studio
             activeVoice={activeVoice}
-            format={format}
+            cleanScript={cleanScript}
+            downloadOutput={downloadOutput}
+            isGenerating={isGenerating}
+            previewStatus={previewStatus}
+            previewUrl={previewUrl}
             previewVoice={previewVoice}
-            setFormat={setFormat}
             setText={setText}
             setVoice={setVoice}
-            voices={voices}
             settings={settings}
             text={text}
             updateSetting={updateSetting}
             voice={voice}
-            downloadOutput={downloadOutput}
-            previewStatus={previewStatus}
-            previewUrl={previewUrl}
+            voices={voices}
           />
         )}
-        {view === 'batch' && <Batch downloadOutput={downloadOutput} />}
+        {view === 'batch' && <Batch onUseLine={openSampleScript} />}
         {view === 'voices' && <Voices selectedVoice={voice} setVoice={setVoice} voices={voices} />}
         {view === 'settings' && <SettingsPanel settings={settings} updateSetting={updateSetting} />}
       </section>
@@ -220,46 +316,52 @@ function BrandMark({ compact }: { compact: boolean }) {
   )
 }
 
-function LabsWebsite({ onLaunch }: { onLaunch: () => void }) {
+function LabsWebsite({ onLaunch, onVoices }: { onLaunch: () => void; onVoices: () => void }) {
+  const features = [
+    { title: 'Script', copy: 'A calm workspace for Swahili lines, narration, and product prompts.', icon: AudioLines },
+    { title: 'Tune', copy: 'Pace, pitch, warmth, and clarity stay visible while you shape the voice.', icon: SlidersHorizontal },
+    { title: 'Export', copy: 'Every download keeps the predictable OngeaLabs WAV filename.', icon: Download },
+  ]
+
   return (
     <div className="labs-page">
       <section className="hero-band">
         <div className="hero-copy">
           <BrandMark compact />
           <h2>OngeaLabs</h2>
-          <p>Swahili text-to-speech tooling for teams turning scripts into clean audio.</p>
+          <p>Friendly Swahili voice tooling for teams building products, lessons, prompts, and short-form audio across African markets.</p>
           <div className="hero-actions">
             <button className="primary-action" onClick={onLaunch} type="button">
+              <AudioLines size={18} />
               Open Ongea
             </button>
-            <button className="secondary-action" type="button">
-              Voice API
+            <button className="secondary-action" onClick={onVoices} type="button">
+              <Mic2 size={18} />
+              View voices
             </button>
           </div>
         </div>
-        <div className="signal-board">
-          <div>
-            <span className="eyebrow">Stack</span>
-            <h3>Minimal interface. Local speech engine.</h3>
-            <p>Ongea keeps the voices and pronunciations in Python while React handles the workspace.</p>
-          </div>
-          <div className="metric-grid">
-            <Metric label="Language" value="Swahili" />
-            <Metric label="Exports" value="MP3/MP4" />
-            <Metric label="Mode" value="Local" />
-          </div>
+        <div className="hero-media">
+          <img alt="OngeaLabs voice studio interface preview" src={heroImage} />
+        </div>
+      </section>
+      <section className="signal-board">
+        <div>
+          <span className="eyebrow">Product shape</span>
+          <h3>One focused studio, one local voice route, one reliable export.</h3>
+        </div>
+        <div className="metric-grid">
+          <Metric label="Language" value="Swahili" />
+          <Metric label="Export" value="WAV" />
+          <Metric label="Engine" value="Local API" />
         </div>
       </section>
       <section className="feature-strip">
-        {[
-          ['Paste', 'Drop in a Swahili script.', AudioLines],
-          ['Tune', 'Pace, pitch, warmth, and clarity.', SlidersHorizontal],
-          ['Export', 'Predictable OngeaLabs files.', Download],
-        ].map(([title, copy, Icon]) => (
-          <article className="feature-tile" key={title as string}>
+        {features.map(({ copy, icon: Icon, title }) => (
+          <article className="feature-tile" key={title}>
             <Icon size={22} />
-            <h3>{title as string}</h3>
-            <p>{copy as string}</p>
+            <h3>{title}</h3>
+            <p>{copy}</p>
           </article>
         ))}
       </section>
@@ -269,35 +371,34 @@ function LabsWebsite({ onLaunch }: { onLaunch: () => void }) {
 
 function Studio(props: {
   activeVoice: Voice | null
+  cleanScript: () => void
   downloadOutput: (format?: OutputFormat) => void | Promise<void>
-  format: OutputFormat
-  previewVoice: () => void
-  setFormat: (format: OutputFormat) => void
-  setText: (text: string) => void
-  setVoice: (voice: string) => void
-  settings: { pace: number; pitch: number; warmth: number; clarity: number }
-  text: string
-  updateSetting: (key: 'pace' | 'pitch' | 'warmth' | 'clarity', value: number) => void
-  voice: string
-  voices: Voice[]
+  isGenerating: boolean
   previewStatus: string
   previewUrl: string | null
+  previewVoice: () => void
+  setText: (text: string) => void
+  setVoice: (voice: string) => void
+  settings: ToneSettings
+  text: string
+  updateSetting: (key: ToneKey, value: number) => void
+  voice: string
+  voices: Voice[]
 }) {
+  const characterCount = props.text.length
+  const wordCount = props.text.trim() ? props.text.trim().split(/\s+/).length : 0
+
   return (
     <div className="studio-grid">
-      <section className="composer-panel">
+      <section className="composer-panel" aria-busy={props.isGenerating}>
         <div className="panel-title">
           <div>
-            <span className="eyebrow">Swahili script</span>
-            <h2>Text to speech</h2>
+            <span className="eyebrow">Composer</span>
+            <h2>Script</h2>
           </div>
-          <div className="format-switch" aria-label="Output format">
-            {(['wav'] as OutputFormat[]).map((item) => (
-              <button className={props.format === item ? 'active' : ''} onClick={() => props.setFormat(item)} key={item} type="button">
-                <FileAudio size={16} />
-                {item.toUpperCase()}
-              </button>
-            ))}
+          <div className="output-pill">
+            <FileAudio size={16} />
+            WAV
           </div>
         </div>
 
@@ -309,17 +410,23 @@ function Studio(props: {
           spellCheck="false"
         />
 
+        <div className="script-meta">
+          <span>{characterCount} characters</span>
+          <span>{wordCount} words</span>
+          <span>{props.activeVoice?.accent ?? 'Kiswahili'}</span>
+        </div>
+
         <div className="action-row">
-          <button className="primary-action" onClick={props.previewVoice} type="button">
+          <button className="primary-action" disabled={props.isGenerating} onClick={props.previewVoice} type="button">
             <Play size={18} />
             Preview
           </button>
-          <button className="secondary-action" type="button">
-            Clean Script
+          <button className="secondary-action" onClick={props.cleanScript} type="button">
+            Polish script
           </button>
-          <button className="secondary-action" onClick={() => props.downloadOutput('wav')} type="button">
+          <button className="secondary-action" disabled={props.isGenerating} onClick={() => props.downloadOutput('wav')} type="button">
             <Download size={18} />
-            ongealabs.wav
+            Download WAV
           </button>
         </div>
         <div className="preview-strip">
@@ -331,11 +438,11 @@ function Studio(props: {
       <aside className="right-rail">
         <section className="voice-card">
           <div className="speaker-avatar">
-            <AudioLines size={36} />
+            <AudioLines size={34} />
           </div>
-          <span className="eyebrow">Speaker</span>
+          <span className="eyebrow">Active voice</span>
           <h2>{props.activeVoice?.name ?? 'Meta MMS TTS Swahili'}</h2>
-          <p>{props.activeVoice?.accent ?? 'Kiswahili'}</p>
+          <p>{props.activeVoice?.tone ?? 'Meta TTS model'}</p>
           <select value={props.voice || META_TTS_VOICE_ID} onChange={(event) => props.setVoice(event.target.value)}>
             {props.voices.length ? (
               props.voices.map((item) => (
@@ -350,27 +457,50 @@ function Studio(props: {
         </section>
 
         <section className="wave-panel">
-          <span className="eyebrow">Pronunciation</span>
-          <p>Preview and export call the Python TTS route so Swahili pronunciation stays with the selected Ongea voice.</p>
+          <span className="eyebrow">Route</span>
+          <p>Preview and export use the same local FastAPI route, so the audio you hear is the audio you download.</p>
         </section>
 
         <section className="tuning-panel">
-          <h3>Tone</h3>
-          <ToneSlider label="Pace" value={props.settings.pace} onChange={(value) => props.updateSetting('pace', value)} />
-          <ToneSlider label="Pitch" value={props.settings.pitch} onChange={(value) => props.updateSetting('pitch', value)} />
-          <ToneSlider label="Warmth" value={props.settings.warmth} onChange={(value) => props.updateSetting('warmth', value)} />
-          <ToneSlider label="Clarity" value={props.settings.clarity} onChange={(value) => props.updateSetting('clarity', value)} />
+          <div className="panel-title compact-title">
+            <div>
+              <span className="eyebrow">Tone</span>
+              <h3>Voice feel</h3>
+            </div>
+          </div>
+          {toneControls.map((control) => (
+            <ToneSlider
+              detail={control.detail}
+              key={control.key}
+              label={control.label}
+              value={props.settings[control.key]}
+              onChange={(value) => props.updateSetting(control.key, value)}
+            />
+          ))}
         </section>
       </aside>
     </div>
   )
 }
 
-function ToneSlider({ label, onChange, value }: { label: string; onChange: (value: number) => void; value: number }) {
+function ToneSlider({
+  detail,
+  label,
+  onChange,
+  value,
+}: {
+  detail: string
+  label: string
+  onChange: (value: number) => void
+  value: number
+}) {
   return (
     <label className="tone-slider">
-      <span>
-        {label}
+      <span className="tone-slider-label">
+        <span>
+          <strong>{label}</strong>
+          <small>{detail}</small>
+        </span>
         <strong>{value}</strong>
       </span>
       <input max="100" min="0" onChange={(event) => onChange(Number(event.target.value))} type="range" value={value} />
@@ -383,13 +513,13 @@ function Voices({ selectedVoice, setVoice, voices }: { selectedVoice: string; se
     <section className="content-panel">
       <div className="panel-title">
         <div>
-          <span className="eyebrow">Speakers</span>
-          <h2>Clear voice library</h2>
+          <span className="eyebrow">Available speakers</span>
+          <h2>Voice library</h2>
         </div>
-        <button className="secondary-action" type="button">
-          <Upload size={18} />
-          Add voice
-        </button>
+        <div className="output-pill">
+          <Mic2 size={16} />
+          API voices
+        </div>
       </div>
       <div className="voice-grid">
         {voices.length ? (
@@ -401,7 +531,7 @@ function Voices({ selectedVoice, setVoice, voices }: { selectedVoice: string; se
               <h3>{item.name}</h3>
               <p>{item.accent}</p>
               <span>{item.tone}</span>
-              {typeof item.clarity === 'number' && <strong>{item.clarity}%</strong>}
+              {typeof item.clarity === 'number' && <strong>{item.clarity}% clarity</strong>}
             </button>
           ))
         ) : (
@@ -419,25 +549,29 @@ function Voices({ selectedVoice, setVoice, voices }: { selectedVoice: string; se
   )
 }
 
-function Batch({ downloadOutput }: { downloadOutput: (format?: OutputFormat) => void | Promise<void> }) {
+function Batch({ onUseLine }: { onUseLine: (line: string) => void }) {
   return (
     <section className="content-panel">
       <div className="panel-title">
         <div>
-          <span className="eyebrow">Batch</span>
-          <h2>Batch audio production</h2>
+          <span className="eyebrow">Reusable lines</span>
+          <h2>Production queue</h2>
         </div>
-        <button className="primary-action" onClick={() => downloadOutput('wav')} type="button">
-          <Download size={18} />
-          Export all
+        <button className="primary-action" onClick={() => onUseLine(sampleScripts[0].text)} type="button">
+          <Play size={18} />
+          Open first line
         </button>
       </div>
       <div className="batch-list">
-        {batchItems.map((item, index) => (
-          <article className="batch-row" key={item}>
+        {sampleScripts.map((item, index) => (
+          <article className="batch-row" key={item.title}>
             <span>{String(index + 1).padStart(2, '0')}</span>
-            <p>{item}</p>
-            <button className="icon-button" title="Generate" type="button">
+            <div>
+              <strong>{item.title}</strong>
+              <p>{item.text}</p>
+              <small>{item.tone}</small>
+            </div>
+            <button className="icon-button" onClick={() => onUseLine(item.text)} title={`Open ${item.title}`} type="button">
               <Play size={17} />
             </button>
           </article>
@@ -451,37 +585,42 @@ function SettingsPanel({
   settings,
   updateSetting,
 }: {
-  settings: { pace: number; pitch: number; warmth: number; clarity: number }
-  updateSetting: (key: 'pace' | 'pitch' | 'warmth' | 'clarity', value: number) => void
+  settings: ToneSettings
+  updateSetting: (key: ToneKey, value: number) => void
 }) {
   return (
     <section className="settings-layout">
       <div className="content-panel">
         <div className="panel-title">
           <div>
-            <span className="eyebrow">Settings</span>
-            <h2>Engine profile</h2>
+            <span className="eyebrow">Engine</span>
+            <h2>Local profile</h2>
           </div>
           <FlaskConical size={24} />
         </div>
         <div className="settings-grid">
-          <SettingBlock title="Backend" value="Python FastAPI" />
-          <SettingBlock title="Default filename" value="ongealabs.wav" />
+          <SettingBlock title="Backend" value="FastAPI" />
+          <SettingBlock title="Default file" value="ongealabs.wav" />
           <SettingBlock title="Model" value="Meta MMS TTS" />
-          <SettingBlock title="Processing" value="Local RAM/CPU" />
+          <SettingBlock title="Processing" value="Local CPU" />
         </div>
       </div>
       <div className="content-panel">
         <div className="panel-title">
           <div>
-            <span className="eyebrow">Voice defaults</span>
+            <span className="eyebrow">Defaults</span>
             <h2>Global tone</h2>
           </div>
         </div>
-        <ToneSlider label="Pace" value={settings.pace} onChange={(value) => updateSetting('pace', value)} />
-        <ToneSlider label="Pitch" value={settings.pitch} onChange={(value) => updateSetting('pitch', value)} />
-        <ToneSlider label="Warmth" value={settings.warmth} onChange={(value) => updateSetting('warmth', value)} />
-        <ToneSlider label="Clarity" value={settings.clarity} onChange={(value) => updateSetting('clarity', value)} />
+        {toneControls.map((control) => (
+          <ToneSlider
+            detail={control.detail}
+            key={control.key}
+            label={control.label}
+            value={settings[control.key]}
+            onChange={(value) => updateSetting(control.key, value)}
+          />
+        ))}
       </div>
     </section>
   )
