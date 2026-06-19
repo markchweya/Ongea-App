@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from hashlib import sha256
 from functools import lru_cache
 from pathlib import Path
+from threading import Lock
 from typing import Any, Literal
 
 
@@ -16,6 +18,12 @@ META_TTS_MODEL_BY_VOICE = {
     "meta-mms-tts-deu": "facebook/mms-tts-deu",
     "meta-mms-tts-fra": "facebook/mms-tts-fra",
 }
+META_TTS_STABILITY_BY_VOICE = {
+    "meta-mms-tts-swh": {"noise_scale": 0.28, "noise_scale_duration": 0.35, "seed": 1103},
+    "meta-mms-tts-deu": {"noise_scale": 0.0, "noise_scale_duration": 0.0, "seed": 2203},
+    "meta-mms-tts-fra": {"noise_scale": 0.24, "noise_scale_duration": 0.28, "seed": 3301},
+}
+_SYNTHESIS_LOCK = Lock()
 META_TTS_VOICES: list[VoiceRecord] = [
     {
         "id": "meta-mms-tts-swh",
@@ -136,10 +144,24 @@ def _load_meta_mms(model_id: str):
 
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = VitsModel.from_pretrained(model_id)
+    model.eval()
     return tokenizer, model
 
 
-def _synthesize_with_meta_mms(text: str, voice: str, output_path: Path) -> bool:
+def _stable_seed_for_voice(voice: str) -> int:
+    configured = META_TTS_STABILITY_BY_VOICE.get(voice, {}).get("seed")
+    if isinstance(configured, int):
+        return configured
+    return int.from_bytes(sha256(voice.encode("utf-8")).digest()[:4], "big")
+
+
+def _speaking_rate_from_pace(pace: int) -> float:
+    """Map the UI pace slider to VITS speaking_rate without extreme jumps."""
+    clamped = max(0, min(100, pace))
+    return 0.84 + (clamped / 100) * 0.32
+
+
+def _synthesize_with_meta_mms(text: str, voice: str, output_path: Path, pace: int) -> bool:
     model_id = META_TTS_MODEL_BY_VOICE.get(voice)
     if not model_id:
         return False
@@ -151,10 +173,20 @@ def _synthesize_with_meta_mms(text: str, voice: str, output_path: Path) -> bool:
     except Exception:
         return False
 
+    stability = META_TTS_STABILITY_BY_VOICE.get(voice, {})
     inputs = tokenizer(text, return_tensors="pt")
 
-    with torch.no_grad():
-        waveform = model(**inputs).waveform
+    # MMS/VITS samples latent audio, so lock and seed each render to keep one
+    # selected voice from drifting between different phrases.
+    with _SYNTHESIS_LOCK:
+        model.noise_scale = float(stability.get("noise_scale", 0.25))
+        model.noise_scale_duration = float(stability.get("noise_scale_duration", 0.25))
+        torch.manual_seed(_stable_seed_for_voice(voice))
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(_stable_seed_for_voice(voice))
+
+        with torch.inference_mode():
+            waveform = model(**inputs, speaking_rate=_speaking_rate_from_pace(pace)).waveform
 
     audio = waveform.squeeze().cpu().numpy()
     write_wav(output_path, rate=model.config.sampling_rate, data=audio)
@@ -182,7 +214,7 @@ def synthesize(
     output_path = output_dir / "ongealabs.wav"
     model_id = META_TTS_MODEL_BY_VOICE.get(voice)
 
-    if _synthesize_with_meta_mms(text, voice, output_path):
+    if _synthesize_with_meta_mms(text, voice, output_path, pace):
         return output_path
 
     payload = {

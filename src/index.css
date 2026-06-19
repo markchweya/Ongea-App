@@ -1,5 +1,5 @@
 html {
-  background: #090d10;
+  background: #fbfbfa;
 }
 
 #root {
@@ -7,6 +7,6 @@ html {
 }
 
 ::selection {
-  background: rgba(53, 224, 185, 0.28);
-  color: #ffffff;
+  background: rgba(4, 123, 97, 0.18);
+  color: #111814;
 }

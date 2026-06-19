@@ -1,21 +1,19 @@
 import {
   Activity,
   AudioLines,
-  BadgeCheck,
   CheckCircle2,
   Clock3,
   Copy,
   Download,
   FileAudio,
   FlaskConical,
-  Gauge,
   Globe2,
   Languages,
-  LayoutDashboard,
   ListChecks,
   Mic2,
   Play,
   Settings,
+  SlidersHorizontal,
   Wand2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -71,26 +69,22 @@ const sampleScripts = [
   },
 ]
 
-const viewMeta: Record<View, { eyebrow: string; title: string; subtitle: string }> = {
+const viewMeta: Record<View, { title: string; subtitle: string }> = {
   studio: {
-    eyebrow: 'Studio',
-    title: 'Multilingual voice production',
-    subtitle: 'Draft the line, choose Swahili, German, or French, preview the take, export a clean WAV.',
+    title: 'Voice studio',
+    subtitle: 'Write once, choose a language, and export a clean WAV from the local OngeaLabs voice API.',
   },
   batch: {
-    eyebrow: 'Queue',
-    title: 'Reusable production lines',
-    subtitle: 'Keep frequent prompts and narration snippets close, then open any line in the studio.',
+    title: 'Production queue',
+    subtitle: 'Reusable lines for demos, product prompts, and narration.',
   },
   voices: {
-    eyebrow: 'Voices',
-    title: 'Speaker library',
-    subtitle: 'Only voices returned by the local API appear here, so export options stay honest.',
+    title: 'Voice library',
+    subtitle: 'The voices currently available through the connected local API.',
   },
   settings: {
-    eyebrow: 'Settings',
-    title: 'Engine profile',
-    subtitle: 'Review backend routing, output naming, model family, and shared tone defaults.',
+    title: 'Settings',
+    subtitle: 'Engine defaults, output details, and voice tone controls.',
   },
 }
 
@@ -153,7 +147,7 @@ function App() {
   }, [])
 
   const navItems = [
-    { id: 'studio' as const, label: 'Studio', icon: LayoutDashboard },
+    { id: 'studio' as const, label: 'Studio', icon: AudioLines },
     { id: 'batch' as const, label: 'Queue', icon: ListChecks },
     { id: 'voices' as const, label: 'Voices', icon: Mic2 },
     { id: 'settings' as const, label: 'Settings', icon: Settings },
@@ -186,7 +180,7 @@ function App() {
       .join('\n')
 
     setText(polished)
-    setPreviewStatus(polished ? 'Script polished and ready for preview.' : 'Add a script before polishing.')
+    setPreviewStatus(polished ? 'Script polished.' : 'Add a script before polishing.')
   }
 
   async function copyScript() {
@@ -202,7 +196,7 @@ function App() {
     if (nextVoice) setVoice(nextVoice)
     setText(nextText)
     setView('studio')
-    setPreviewStatus('Script loaded into the studio.')
+    setPreviewStatus('Script loaded.')
   }
 
   async function requestSynthesis(nextFormat: OutputFormat) {
@@ -247,7 +241,7 @@ function App() {
   async function previewVoice() {
     try {
       setIsGenerating(true)
-      setPreviewStatus('Rendering preview take...')
+      setPreviewStatus('Rendering preview...')
       const blob = await requestSynthesis('wav')
       if (previewUrl) URL.revokeObjectURL(previewUrl)
       const nextUrl = URL.createObjectURL(blob)
@@ -262,49 +256,49 @@ function App() {
 
   return (
     <main className="app-shell">
-      <aside className="sidebar" aria-label="Ongea navigation">
-        <BrandMark compact={false} />
-        <nav className="nav-stack">
+      <header className="app-header">
+        <button className="brand-lockup" onClick={() => setView('studio')} type="button">
+          <span className="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <path d="M13 33C13 18.6 22.4 8 34.3 8c9.1 0 16.7 6.5 16.7 15.4 0 14.3-14.5 19.7-23.1 30.6C19.6 49.2 13 42.8 13 33Z" />
+              <path d="M25 34c0-6.9 4.4-12.5 9.8-12.5 4.2 0 7.7 3.2 7.7 7.4 0 6.7-6.8 9.3-10.9 14.4C27.7 41.1 25 38 25 34Z" />
+            </svg>
+          </span>
+          <span>
+            <strong>OngeaLabs</strong>
+            <small>Voice studio</small>
+          </span>
+        </button>
+
+        <nav className="app-nav" aria-label="Primary navigation">
           {navItems.map((item) => {
             const Icon = item.icon
             return (
               <button
                 aria-current={currentView === item.id ? 'page' : undefined}
-                className={currentView === item.id ? 'nav-item active' : 'nav-item'}
+                className={currentView === item.id ? 'nav-tab active' : 'nav-tab'}
                 key={item.id}
                 onClick={() => setView(item.id)}
                 type="button"
               >
-                <Icon size={18} />
-                <span>{item.label}</span>
+                <Icon size={16} />
+                {item.label}
               </button>
             )
           })}
         </nav>
-        <div className={`system-card ${apiStatus}`}>
-          <span className="status-dot" aria-hidden="true" />
-          <p>Voice API</p>
-          <strong>{apiStatus === 'ready' ? 'Connected' : apiStatus === 'checking' ? 'Checking' : 'Offline'}</strong>
-          <span>{activeVoice?.name ?? 'Meta MMS TTS Swahili'}</span>
+
+        <div className="header-actions">
+          <StatusBadge status={apiStatus} />
+          <button className="primary-action" disabled={isGenerating} onClick={() => downloadOutput(format)} type="button">
+            <Download size={17} />
+            Export
+          </button>
         </div>
-      </aside>
+      </header>
 
-      <section className="workspace">
-        <header className={currentView === 'studio' ? 'topbar studio-topbar' : 'topbar'}>
-          <div>
-            <span className="eyebrow">{meta.eyebrow}</span>
-            <h1>{meta.title}</h1>
-            <p>{meta.subtitle}</p>
-          </div>
-          <div className="topbar-actions">
-            <StatusBadge status={apiStatus} />
-            <button className="primary-action" disabled={isGenerating} onClick={() => downloadOutput(format)} type="button">
-              <Download size={18} />
-              Export WAV
-            </button>
-          </div>
-        </header>
-
+      <section className="page-shell">
+        <PageHeader title={meta.title} subtitle={meta.subtitle} />
         {currentView === 'studio' && (
           <Studio
             activeVoice={activeVoice}
@@ -334,26 +328,19 @@ function App() {
 
 function StatusBadge({ status }: { status: ApiStatus }) {
   return (
-    <div className={`status-badge ${status}`}>
-      <span />
-      {status === 'ready' ? 'API ready' : status === 'checking' ? 'Checking API' : 'API offline'}
-    </div>
+    <span className={`status-badge ${status}`}>
+      <span aria-hidden="true" />
+      {status === 'ready' ? 'API ready' : status === 'checking' ? 'Checking' : 'Offline'}
+    </span>
   )
 }
 
-function BrandMark({ compact }: { compact: boolean }) {
+function PageHeader({ subtitle, title }: { subtitle: string; title: string }) {
   return (
-    <div className={compact ? 'brand compact' : 'brand'}>
-      <div className="logo-mark" aria-hidden="true">
-        <svg viewBox="0 0 64 64" role="img">
-          <path d="M13 33C13 18.6 22.4 8 34.3 8c9.1 0 16.7 6.5 16.7 15.4 0 14.3-14.5 19.7-23.1 30.6C19.6 49.2 13 42.8 13 33Z" />
-          <path d="M25 34c0-6.9 4.4-12.5 9.8-12.5 4.2 0 7.7 3.2 7.7 7.4 0 6.7-6.8 9.3-10.9 14.4C27.7 41.1 25 38 25 34Z" />
-        </svg>
-      </div>
-      <div>
-        <strong>Ongea</strong>
-        {!compact && <span>by OngeaLabs</span>}
-      </div>
+    <div className="page-header">
+      <span>OngeaLabs</span>
+      <h1>{title}</h1>
+      <p>{subtitle}</p>
     </div>
   )
 }
@@ -377,149 +364,105 @@ function Studio(props: {
 }) {
   const characterCount = props.text.length
   const wordCount = props.text.trim() ? props.text.trim().split(/\s+/).length : 0
-  const lineCount = Math.max(1, props.text.split('\n').length)
   const estimatedSeconds = Math.max(2, Math.round(wordCount / 2.4))
   const activeLanguage = props.activeVoice?.language || 'sw'
-  const languageLabel = props.activeVoice?.accent || props.activeVoice?.locale || 'Kiswahili'
+  const languageLabel = props.activeVoice?.locale || props.activeVoice?.accent || 'Swahili'
   const activeModel = props.activeVoice?.model?.replace('facebook/', '') || 'mms-tts-swh'
 
   return (
-    <div className="studio-board">
-      <section className="script-workbench" aria-busy={props.isGenerating}>
-        <div className="workbench-header">
-          <div>
-            <span className="eyebrow">Composer</span>
-            <h2>Script take</h2>
-          </div>
-          <div className="editor-actions">
-            <button className="tool-button" onClick={props.copyScript} type="button">
-              <Copy size={16} />
-              Copy
+    <div className="studio-layout">
+      <section className="studio-main">
+        <div className="language-tabs" aria-label="Select language">
+          {props.voices.length ? (
+            props.voices.map((item) => {
+              const language = item.language || 'sw'
+              const isSelected = props.voice === item.id
+              return (
+                <button className={isSelected ? 'language-tab active' : 'language-tab'} key={item.id} onClick={() => props.setVoice(item.id)} type="button">
+                  <span>{language.toUpperCase()}</span>
+                  {item.locale || item.accent}
+                </button>
+              )
+            })
+          ) : (
+            <button className="language-tab active" onClick={() => props.setVoice(META_TTS_VOICE_ID)} type="button">
+              <span>SW</span>
+              Swahili
             </button>
-            <button className="tool-button" onClick={props.cleanScript} type="button">
-              <Wand2 size={16} />
-              Polish
-            </button>
-          </div>
+          )}
         </div>
 
-        <div className="editor-shell">
-          <div className="editor-toolbar">
-            <div className="mini-chip">
-              <Languages size={14} />
-              {languageLabel}
+        <section className="editor-card">
+          <div className="editor-card-header">
+            <div>
+              <span className="section-label">Script</span>
+              <h2>{languageLabel} take</h2>
             </div>
-            <div className="mini-chip coral">
-              <Clock3 size={14} />
-              ~{estimatedSeconds}s
-            </div>
-            <div className="mini-chip indigo">
-              <FileAudio size={14} />
-              WAV
+            <div className="editor-actions">
+              <button className="secondary-action" onClick={props.copyScript} type="button">
+                <Copy size={16} />
+                Copy
+              </button>
+              <button className="secondary-action" onClick={props.cleanScript} type="button">
+                <Wand2 size={16} />
+                Polish
+              </button>
             </div>
           </div>
-          <div className="editor-body">
-            <div className="line-gutter" aria-hidden="true">
-              {Array.from({ length: lineCount }).map((_, index) => (
-                <span key={index}>{index + 1}</span>
-              ))}
-            </div>
-            <textarea
-              aria-label={`${languageLabel} text for TTS`}
-              placeholder={placeholderByLanguage[activeLanguage] ?? 'Write or paste your script here...'}
-              value={props.text}
-              onChange={(event) => props.setText(event.target.value)}
-              spellCheck="false"
-            />
+
+          <textarea
+            aria-label={`${languageLabel} text for TTS`}
+            className="script-input"
+            placeholder={placeholderByLanguage[activeLanguage] ?? 'Write or paste your script here...'}
+            value={props.text}
+            onChange={(event) => props.setText(event.target.value)}
+            spellCheck="false"
+          />
+
+          <div className="editor-meta">
+            <MetricPill icon={Activity} label="Words" value={String(wordCount)} />
+            <MetricPill icon={AudioLines} label="Characters" value={String(characterCount)} />
+            <MetricPill icon={Clock3} label="Estimate" value={`~${estimatedSeconds}s`} />
           </div>
-        </div>
+        </section>
 
-        <div className="studio-metrics">
-          <MetricPill icon={AudioLines} label="Characters" value={String(characterCount)} />
-          <MetricPill icon={Activity} label="Words" value={String(wordCount)} />
-          <MetricPill icon={BadgeCheck} label="Voice" value={languageLabel} />
-        </div>
-
-        <div className="transport-panel">
-          <button className="transport-play" disabled={props.isGenerating} onClick={props.previewVoice} type="button">
-            <Play size={19} />
-            Preview take
+        <section className="player-bar" aria-label="Audio preview and export">
+          <button className="play-action" disabled={props.isGenerating} onClick={props.previewVoice} type="button">
+            <Play size={18} />
+            Preview
           </button>
-          <div className="transport-status">
+          <div className="preview-status">
             <span>{props.previewStatus}</span>
             {props.previewUrl && <audio controls src={props.previewUrl} />}
           </div>
-          <button className="transport-export" disabled={props.isGenerating} onClick={() => props.downloadOutput('wav')} type="button">
-            <Download size={18} />
-            Export
+          <button className="primary-action" disabled={props.isGenerating} onClick={() => props.downloadOutput('wav')} type="button">
+            <Download size={17} />
+            WAV
           </button>
-        </div>
+        </section>
       </section>
 
-      <aside className="studio-console">
-        <section className="voice-console">
-          <div className="console-topline">
-            <span className="eyebrow">Voice and language</span>
-            <span className="voice-count-pill">{props.voices.length || 1} models</span>
-          </div>
-
-          <div className="active-voice-card">
-            <div className="voice-code">{activeLanguage.toUpperCase()}</div>
+      <aside className="studio-aside">
+        <section className="inspector-card voice-card">
+          <span className="section-label">Voice</span>
+          <div className="voice-summary">
+            <span>{activeLanguage.toUpperCase()}</span>
             <div>
               <h2>{languageLabel}</h2>
               <p>{props.activeVoice?.name ?? 'Meta MMS TTS Swahili'}</p>
             </div>
           </div>
-
-          <div className="voice-choice-list" aria-label="Select a voice model">
-            {props.voices.length ? (
-              props.voices.map((item) => {
-                const language = item.language || 'sw'
-                const model = item.model?.replace('facebook/', '') || item.id
-                const isSelected = props.voice === item.id
-                return (
-                  <button className={isSelected ? 'voice-choice active' : 'voice-choice'} key={item.id} onClick={() => props.setVoice(item.id)} type="button">
-                    <span className="voice-choice-code">{language.toUpperCase()}</span>
-                    <span className="voice-choice-copy">
-                      <strong>{item.locale || item.accent}</strong>
-                      <small>{model}</small>
-                    </span>
-                    {isSelected && <CheckCircle2 size={18} />}
-                  </button>
-                )
-              })
-            ) : (
-              <button className="voice-choice active" onClick={() => props.setVoice(META_TTS_VOICE_ID)} type="button">
-                <span className="voice-choice-code">SW</span>
-                <span className="voice-choice-copy">
-                  <strong>Kiswahili</strong>
-                  <small>mms-tts-swh</small>
-                </span>
-                <CheckCircle2 size={18} />
-              </button>
-            )}
-          </div>
-
-          <div className="model-details">
-            <div className="model-row">
-              <span>Provider</span>
-              <strong>Meta MMS</strong>
-            </div>
-            <div className="model-row">
-              <span>Model</span>
-              <strong>{activeModel}</strong>
-            </div>
-            <div className="model-row">
-              <span>Output</span>
-              <strong>WAV</strong>
-            </div>
+          <div className="model-list">
+            <InfoRow label="Provider" value="Meta MMS" />
+            <InfoRow label="Model" value={activeModel} />
+            <InfoRow label="Output" value="WAV" />
           </div>
         </section>
 
-        <section className="tone-console">
-          <div className="console-topline">
-            <span className="eyebrow">Voice feel</span>
-            <Gauge size={20} />
+        <section className="inspector-card">
+          <div className="inspector-title">
+            <span className="section-label">Tone</span>
+            <SlidersHorizontal size={18} />
           </div>
           {toneControls.map((control) => (
             <ToneSlider
@@ -530,14 +473,6 @@ function Studio(props: {
               onChange={(value) => props.updateSetting(control.key, value)}
             />
           ))}
-        </section>
-
-        <section className="route-console">
-          <CheckCircle2 size={20} />
-          <div>
-            <strong>Same route for preview and export</strong>
-            <p>The audio you hear is rendered by the local FastAPI synthesis endpoint.</p>
-          </div>
         </section>
       </aside>
     </div>
@@ -555,7 +490,16 @@ function MetricPill({
 }) {
   return (
     <div className="metric-pill">
-      <Icon size={16} />
+      <Icon size={15} />
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  )
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="info-row">
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
@@ -575,7 +519,7 @@ function ToneSlider({
 }) {
   return (
     <label className="tone-slider">
-      <span className="tone-slider-label">
+      <span>
         <span>
           <strong>{label}</strong>
           <small>{detail}</small>
@@ -589,38 +533,24 @@ function ToneSlider({
 
 function Voices({ selectedVoice, setVoice, voices }: { selectedVoice: string; setVoice: (voice: string) => void; voices: Voice[] }) {
   return (
-    <section className="content-panel">
-      <div className="panel-title">
-        <div>
-          <span className="eyebrow">Available speakers</span>
-          <h2>Voice library</h2>
-        </div>
-        <div className="output-pill">
-          <Mic2 size={16} />
-          API voices
-        </div>
-      </div>
+    <section className="simple-panel">
       <div className="voice-grid">
         {voices.length ? (
           voices.map((item) => (
             <button className={selectedVoice === item.id ? 'voice-option active' : 'voice-option'} key={item.id} onClick={() => setVoice(item.id)} type="button">
-              <div className="mini-avatar">
-                <Mic2 size={22} />
-              </div>
-              <h3>{item.name}</h3>
-              <p>{item.accent}</p>
-              <span>{item.tone}</span>
-              {typeof item.clarity === 'number' && <strong>{item.clarity}% clarity</strong>}
+              <span className="voice-option-code">{(item.language || 'sw').toUpperCase()}</span>
+              <h3>{item.locale || item.accent}</h3>
+              <p>{item.name}</p>
+              <small>{item.model?.replace('facebook/', '') || item.id}</small>
+              {selectedVoice === item.id && <CheckCircle2 size={18} />}
             </button>
           ))
         ) : (
-          <article className="voice-option">
-            <div className="mini-avatar">
-              <Mic2 size={22} />
-            </div>
-            <h3>Meta MMS TTS Swahili</h3>
-            <p>Kiswahili</p>
-            <span>Meta TTS model</span>
+          <article className="voice-option active">
+            <span className="voice-option-code">SW</span>
+            <h3>Swahili</h3>
+            <p>Meta MMS TTS Swahili</p>
+            <small>mms-tts-swh</small>
           </article>
         )}
       </div>
@@ -630,17 +560,7 @@ function Voices({ selectedVoice, setVoice, voices }: { selectedVoice: string; se
 
 function Batch({ onUseLine }: { onUseLine: (line: string, voiceId?: string) => void }) {
   return (
-    <section className="content-panel">
-      <div className="panel-title">
-        <div>
-          <span className="eyebrow">Reusable lines</span>
-          <h2>Production queue</h2>
-        </div>
-        <button className="primary-action" onClick={() => onUseLine(sampleScripts[0].text, sampleScripts[0].voiceId)} type="button">
-          <Play size={18} />
-          Open first line
-        </button>
-      </div>
+    <section className="simple-panel">
       <div className="batch-list">
         {sampleScripts.map((item, index) => (
           <article className="batch-row" key={item.title}>
@@ -650,8 +570,9 @@ function Batch({ onUseLine }: { onUseLine: (line: string, voiceId?: string) => v
               <p>{item.text}</p>
               <small>{item.tone}</small>
             </div>
-            <button className="icon-button" onClick={() => onUseLine(item.text, item.voiceId)} title={`Open ${item.title}`} type="button">
-              <Play size={17} />
+            <button className="secondary-action" onClick={() => onUseLine(item.text, item.voiceId)} type="button">
+              <Play size={16} />
+              Open
             </button>
           </article>
         ))}
@@ -669,28 +590,15 @@ function SettingsPanel({
 }) {
   return (
     <section className="settings-layout">
-      <div className="content-panel">
-        <div className="panel-title">
-          <div>
-            <span className="eyebrow">Engine</span>
-            <h2>Local profile</h2>
-          </div>
-          <FlaskConical size={24} />
-        </div>
+      <div className="simple-panel">
         <div className="settings-grid">
-          <SettingBlock title="Backend" value="FastAPI" />
-          <SettingBlock title="Default file" value="ongealabs.wav" />
-          <SettingBlock title="Model" value="Meta MMS TTS" />
-          <SettingBlock title="Processing" value="Local CPU" />
+          <SettingBlock icon={FlaskConical} title="Backend" value="FastAPI" />
+          <SettingBlock icon={FileAudio} title="Default file" value="ongealabs.wav" />
+          <SettingBlock icon={Globe2} title="Engine" value="Meta MMS TTS" />
+          <SettingBlock icon={Languages} title="Languages" value="SW, DE, FR" />
         </div>
       </div>
-      <div className="content-panel">
-        <div className="panel-title">
-          <div>
-            <span className="eyebrow">Defaults</span>
-            <h2>Global tone</h2>
-          </div>
-        </div>
+      <div className="simple-panel tone-defaults">
         {toneControls.map((control) => (
           <ToneSlider
             detail={control.detail}
@@ -705,10 +613,18 @@ function SettingsPanel({
   )
 }
 
-function SettingBlock({ title, value }: { title: string; value: string }) {
+function SettingBlock({
+  icon: Icon,
+  title,
+  value,
+}: {
+  icon: typeof AudioLines
+  title: string
+  value: string
+}) {
   return (
     <article className="setting-block">
-      <Globe2 size={20} />
+      <Icon size={18} />
       <span>{title}</span>
       <strong>{value}</strong>
     </article>
