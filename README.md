@@ -18,6 +18,16 @@ npm run dev
 
 Open `http://localhost:5173`.
 
+## Deploy the frontend
+
+The React studio can be deployed as a Vite app on Vercel. If the voice API is hosted separately, set this environment variable in Vercel:
+
+```bash
+VITE_API_BASE_URL=https://your-voice-api.example.com
+```
+
+Without `VITE_API_BASE_URL`, local development defaults to `http://127.0.0.1:8001`.
+
 ## Run the Python voice API
 
 ```bash

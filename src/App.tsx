@@ -35,7 +35,8 @@ type Voice = {
 type ToneKey = 'pace' | 'pitch' | 'warmth' | 'clarity'
 type ToneSettings = Record<ToneKey, number>
 
-const API_BASE_URL = 'http://127.0.0.1:8001'
+const LOCAL_API_BASE_URL = 'http://127.0.0.1:8001'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? LOCAL_API_BASE_URL : '')
 const META_TTS_VOICE_ID = 'meta-mms-tts-swh'
 const defaultScriptByLanguage: Record<string, string> = {
   sw: 'Habari, karibu Ongea. Andika maandishi yako ya Kiswahili hapa, kisha tengeneza sauti.',

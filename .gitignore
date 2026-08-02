@@ -25,3 +25,4 @@ backend/__pycache__
 *.njsproj
 *.sln
 *.sw?
+.vercel
