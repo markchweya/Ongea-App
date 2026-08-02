@@ -2,6 +2,13 @@
 
 Ongea is the multilingual TTS studio owned by OngeaLabs. The React app contains the product UI, speaker library, batch production view, and settings page.
 
+## Current local studio
+
+- Frontend: `http://127.0.0.1:5173`
+- Voice API: `http://127.0.0.1:8001`
+- Product surface: OngeaLabs Voice Studio
+- Supported local preview voices: Swahili, German, and French
+
 ## Run the app
 
 ```bash
@@ -29,6 +36,8 @@ The backend uses Meta MMS TTS for Swahili, German, and French:
 - `facebook/mms-tts-swh`
 - `facebook/mms-tts-deu`
 - `facebook/mms-tts-fra`
+
+The MMS adapter runs voice previews in inference mode with stable per-voice generation settings so short German, Swahili, and French phrases keep a consistent selected voice between renders.
 
 Keep the returned filename as:
 
