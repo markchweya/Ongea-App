@@ -38,6 +38,38 @@ type ToneSettings = Record<ToneKey, number>
 const LOCAL_API_BASE_URL = 'http://127.0.0.1:8001'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? LOCAL_API_BASE_URL : '')
 const META_TTS_VOICE_ID = 'meta-mms-tts-swh'
+const BUILT_IN_VOICES: Voice[] = [
+  {
+    id: 'meta-mms-tts-swh',
+    name: 'Meta MMS TTS Swahili',
+    accent: 'Kiswahili',
+    language: 'sw',
+    locale: 'Swahili',
+    model: 'facebook/mms-tts-swh',
+    tone: 'Stable OngeaLabs preview voice',
+    clarity: 100,
+  },
+  {
+    id: 'meta-mms-tts-deu',
+    name: 'Meta MMS TTS German',
+    accent: 'Deutsch',
+    language: 'de',
+    locale: 'German',
+    model: 'facebook/mms-tts-deu',
+    tone: 'Stable OngeaLabs preview voice',
+    clarity: 100,
+  },
+  {
+    id: 'meta-mms-tts-fra',
+    name: 'Meta MMS TTS French',
+    accent: 'Francais',
+    language: 'fr',
+    locale: 'French',
+    model: 'facebook/mms-tts-fra',
+    tone: 'Stable OngeaLabs preview voice',
+    clarity: 100,
+  },
+]
 const defaultScriptByLanguage: Record<string, string> = {
   sw: 'Habari, karibu Ongea. Andika maandishi yako ya Kiswahili hapa, kisha tengeneza sauti.',
   de: 'Hallo, willkommen bei Ongea. Schreibe deinen deutschen Text hier und erstelle daraus eine klare Sprachaufnahme.',
@@ -98,7 +130,7 @@ const toneControls: { key: ToneKey; label: string; detail: string }[] = [
 
 function App() {
   const [view, setView] = useState<View>('studio')
-  const [voices, setVoices] = useState<Voice[]>([])
+  const [voices, setVoices] = useState<Voice[]>(BUILT_IN_VOICES)
   const [voice, setVoice] = useState(META_TTS_VOICE_ID)
   const [format] = useState<OutputFormat>('wav')
   const [text, setText] = useState(defaultScriptByLanguage.sw)
@@ -117,11 +149,22 @@ function App() {
     let isMounted = true
 
     async function loadVoices() {
+      if (!API_BASE_URL) {
+        if (!isMounted) return
+        setVoices(BUILT_IN_VOICES)
+        setVoice((current) => (BUILT_IN_VOICES.some((item) => item.id === current) ? current : META_TTS_VOICE_ID))
+        setApiStatus('offline')
+        setPreviewStatus((current) =>
+          current === 'Checking voice API...' || current === 'Voice ready.' ? 'Connect a hosted voice API to render audio.' : current,
+        )
+        return
+      }
+
       try {
         const response = await fetch(`${API_BASE_URL}/api/voices`)
         if (!response.ok) throw new Error(`Ongea API returned ${response.status}`)
         const data = (await response.json()) as { voices?: Voice[] }
-        const nextVoices = data.voices ?? []
+        const nextVoices = data.voices?.length ? data.voices : BUILT_IN_VOICES
         if (!isMounted) return
 
         setVoices(nextVoices)
@@ -132,8 +175,8 @@ function App() {
         )
       } catch {
         if (!isMounted) return
-        setVoices([])
-        setVoice(META_TTS_VOICE_ID)
+        setVoices(BUILT_IN_VOICES)
+        setVoice((current) => (BUILT_IN_VOICES.some((item) => item.id === current) ? current : META_TTS_VOICE_ID))
         setApiStatus('offline')
         setPreviewStatus((current) => (current === 'Checking voice API...' || current === 'Voice ready.' ? 'Voice API is offline.' : current))
       }
@@ -204,6 +247,7 @@ function App() {
     const selectedVoice = voice || META_TTS_VOICE_ID
     const script = text.trim()
     if (!script) throw new Error('Add a script before generating audio.')
+    if (!API_BASE_URL) throw new Error('Connect a hosted voice API before rendering audio on Vercel.')
 
     const response = await fetch(`${API_BASE_URL}/api/synthesize`, {
       method: 'POST',

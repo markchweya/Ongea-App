@@ -26,7 +26,7 @@ The React studio can be deployed as a Vite app on Vercel. If the voice API is ho
 VITE_API_BASE_URL=https://your-voice-api.example.com
 ```
 
-Without `VITE_API_BASE_URL`, local development defaults to `http://127.0.0.1:8001`.
+Without `VITE_API_BASE_URL`, local development defaults to `http://127.0.0.1:8001`. Production builds still show the Swahili, German, and French voice profiles, but preview/export requires a hosted voice API.
 
 ## Run the Python voice API
 
@@ -37,7 +37,7 @@ pip install -r backend\requirements.txt
 npm run api
 ```
 
-The frontend calls `http://127.0.0.1:8001/api/voices` for the speaker list and `http://127.0.0.1:8001/api/synthesize` when previewing or exporting. The UI does not include fallback sample voices; only voices returned by the API are shown.
+The frontend calls `http://127.0.0.1:8001/api/voices` for the speaker list and `http://127.0.0.1:8001/api/synthesize` when previewing or exporting. If the voice API is unavailable, the UI keeps the built-in Swahili, German, and French voice profiles visible while disabling real audio rendering.
 
 ## Connect the existing TTS models
 
