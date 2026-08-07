@@ -1,17 +1,17 @@
 {
   "name": "ongealabs",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "api": "python -m uvicorn backend.main:app --reload --port 8001",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
-    "lucide-react": "^1.18.0",
+    "@huggingface/transformers": "^4.2.0",
+    "espeak-ng": "^1.0.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
