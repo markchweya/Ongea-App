@@ -1,0 +1,97 @@
+{
+ "version": "1.0",
+ "truncation": null,
+ "padding": null,
+ "added_tokens": [
+  {
+   "id": 39,
+   "content": "<unk>",
+   "single_word": false,
+   "lstrip": false,
+   "rstrip": false,
+   "normalized": false,
+   "special": true
+  }
+ ],
+ "normalizer": {
+  "type": "Sequence",
+  "normalizers": [
+   {
+    "type": "Lowercase"
+   },
+   {
+    "type": "Replace",
+    "pattern": {
+     "Regex": "[^ '\\-012345678_abcdefghijklmnopqrstuvwyzʼ]"
+    },
+    "content": ""
+   },
+   {
+    "type": "Strip",
+    "strip_left": true,
+    "strip_right": true
+   },
+   {
+    "type": "Replace",
+    "pattern": {
+     "Regex": "(?=.)|(?<!^)$"
+    },
+    "content": "2"
+   }
+  ]
+ },
+ "pre_tokenizer": {
+  "type": "Split",
+  "pattern": {
+   "Regex": ""
+  },
+  "behavior": "Isolated",
+  "invert": false
+ },
+ "post_processor": null,
+ "decoder": null,
+ "model": {
+  "vocab": {
+   "2": 0,
+   "m": 1,
+   "d": 2,
+   "r": 3,
+   "j": 4,
+   "l": 5,
+   "s": 6,
+   "8": 7,
+   "c": 8,
+   "-": 9,
+   "k": 10,
+   "e": 11,
+   "p": 12,
+   "0": 13,
+   "g": 14,
+   "u": 15,
+   "w": 16,
+   "7": 17,
+   "4": 18,
+   "b": 19,
+   "f": 20,
+   "v": 21,
+   "i": 22,
+   "1": 23,
+   "3": 24,
+   "o": 25,
+   "t": 26,
+   "6": 27,
+   "z": 28,
+   "a": 29,
+   "y": 30,
+   "5": 31,
+   "n": 32,
+   "q": 33,
+   " ": 34,
+   "ʼ": 35,
+   "'": 36,
+   "h": 37,
+   "_": 38,
+   "<unk>": 39
+  }
+ }
+}
