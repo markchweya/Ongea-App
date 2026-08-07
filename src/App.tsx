@@ -89,7 +89,7 @@ export default function App() {
             onChange={(event) => updateScript(event.target.value)}
           />
 
-          <Phrasing clauses={clauses} />
+          <Phrasing clauses={clauses} status={status} />
         </section>
 
         <aside className="settings">
@@ -166,32 +166,45 @@ export default function App() {
 }
 
 /**
- * Shows how the script was cut up before it was spoken. This is the punctuation
- * doing its work: each block is one clause, and the gap after it is the rest the
- * mark earned.
+ * How the script was cut up, folded away until asked for.
+ *
+ * The split is engine detail rather than something to read, so the summary
+ * carries the state — which clause is being spoken — and only opening it shows
+ * the clauses themselves.
  */
-function Phrasing({ clauses }: { clauses: { text: string; pause: number }[] }) {
-  if (!clauses.length) {
-    return <p className="phrasing empty">Nothing to say yet.</p>
-  }
+function Phrasing({
+  clauses,
+  status,
+}: {
+  clauses: { text: string; pause: number }[]
+  status: Status
+}) {
+  if (!clauses.length) return null
+
+  const spoken = status.kind === 'speaking' ? status.clause : 0
+  const count = `${clauses.length} ${clauses.length === 1 ? 'clause' : 'clauses'}`
 
   return (
-    <div className="phrasing">
-      <h2>
-        Phrasing
-        <span>
-          {clauses.length} {clauses.length === 1 ? 'clause' : 'clauses'}
+    <details className="phrasing">
+      <summary>
+        <span className="chevron" aria-hidden="true" />
+        <span className="phrasing-state">
+          {status.kind === 'speaking' ? `Speaking clause ${status.clause} of ${status.total}` : 'Phrasing'}
         </span>
-      </h2>
+        <span className="phrasing-count">{count}</span>
+      </summary>
       <ol>
-        {clauses.map((clause, index) => (
-          <li key={`${index}-${clause.text}`}>
-            <span className="clause">{clause.text}</span>
-            {clause.pause > 0.13 && <span className="rest">{Math.round(clause.pause * 1000)} ms</span>}
-          </li>
-        ))}
+        {clauses.map((clause, index) => {
+          const state = !spoken ? '' : index + 1 < spoken ? 'done' : index + 1 === spoken ? 'active' : 'waiting'
+          return (
+            <li key={`${index}-${clause.text}`} className={state}>
+              <span className="clause">{clause.text}</span>
+              {clause.pause > 0.13 && <span className="rest">{Math.round(clause.pause * 1000)} ms</span>}
+            </li>
+          )
+        })}
       </ol>
-    </div>
+    </details>
   )
 }
 

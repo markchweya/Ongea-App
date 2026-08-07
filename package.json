@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
+    "espeak-ng": "^1.0.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

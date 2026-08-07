@@ -174,33 +174,56 @@ textarea {
 
 .phrasing {
   border-top: 1px solid var(--rule);
-  padding-top: 16px;
 }
 
-.phrasing.empty {
-  color: var(--ink-faint);
-  font-size: 13px;
-}
-
-.phrasing h2 {
+.phrasing summary {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin: 0 0 12px;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
   color: var(--ink-faint);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 12px;
+  cursor: pointer;
+  list-style: none;
 }
 
-.phrasing h2 span {
-  letter-spacing: 0;
-  text-transform: none;
-  font-weight: 400;
+.phrasing summary::-webkit-details-marker {
+  display: none;
+}
+
+.phrasing summary:hover {
+  color: var(--ink-soft);
+}
+
+.chevron {
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 140ms ease;
+}
+
+.phrasing[open] .chevron {
+  transform: rotate(45deg);
+}
+
+.phrasing-state {
+  flex: 1;
+}
+
+.phrasing-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* An explicit display on a details child overrides the hiding the browser
+   would otherwise do, so a closed panel has to be told to stay shut. */
+.phrasing:not([open]) ol {
+  display: none;
 }
 
 .phrasing ol {
+  padding-bottom: 14px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -234,6 +257,21 @@ textarea {
   color: var(--ink-faint);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+}
+
+/* Once a render is under way, each clause reports where it has got to. */
+.phrasing li.done .clause {
+  opacity: 0.5;
+}
+
+.phrasing li.waiting .clause {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.phrasing li.active .clause {
+  border-color: var(--accent);
+  color: var(--ink);
 }
 
 /* Settings ---------------------------------------------------------------- */
