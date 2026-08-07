@@ -3,17 +3,21 @@
 :root {
   --paper: #f7f6f2;
   --card: #fffefb;
+  --raised: #f2f1eb;
   --ink: #16181a;
-  --ink-soft: #5d635f;
+  --ink-soft: #5a605c;
   --ink-faint: #8b918c;
-  --rule: #e2e0d8;
-  --rule-strong: #cbc8bd;
-  --accent: #0f6b52;
-  --accent-ink: #0b4c3a;
+  --rule: #e4e2da;
+  --rule-strong: #cdcabf;
+  --accent: #10684f;
+  --accent-ink: #0c4d3b;
+  --accent-wash: #e8f1ec;
+  --on-accent: #fbfdfc;
   --warning: #8f3a24;
 
   --gutter: clamp(20px, 5vw, 64px);
-  --radius: 4px;
+  --radius: 5px;
+  --radius-card: 10px;
 
   color-scheme: light;
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -22,18 +26,24 @@
   background: var(--paper);
 }
 
+/* Dark is designed rather than inverted: the accent loses most of its
+   saturation, because the same green that reads as ink on paper reads as neon
+   on near-black. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #131514;
-    --card: #1b1e1c;
-    --ink: #eceae4;
-    --ink-soft: #a2a7a2;
-    --ink-faint: #7b817c;
-    --rule: #2c302d;
-    --rule-strong: #3d423e;
-    --accent: #4fbf9b;
-    --accent-ink: #7ed4b7;
-    --warning: #e08e74;
+    --paper: #101211;
+    --card: #181b19;
+    --raised: #1f2320;
+    --ink: #e7e5df;
+    --ink-soft: #9ba19c;
+    --ink-faint: #6e746f;
+    --rule: #262a27;
+    --rule-strong: #383d39;
+    --accent: #57a487;
+    --accent-ink: #84c6aa;
+    --accent-wash: #1a2621;
+    --on-accent: #0b120e;
+    --warning: #d98b71;
 
     color-scheme: dark;
   }
@@ -69,11 +79,10 @@ textarea {
 .page {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 30px;
   width: min(1080px, 100%);
-  min-height: 100vh;
   margin-inline: auto;
-  padding: clamp(32px, 6vw, 72px) var(--gutter) 40px;
+  padding: clamp(30px, 5vw, 60px) var(--gutter) 48px;
 }
 
 .masthead {
@@ -83,13 +92,13 @@ textarea {
 .wordmark {
   display: flex;
   align-items: baseline;
-  gap: 12px;
+  gap: 11px;
 }
 
 .wordmark h1 {
   margin: 0;
   font-family: ui-serif, Georgia, 'Times New Roman', serif;
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 500;
   letter-spacing: -0.015em;
 }
@@ -97,47 +106,54 @@ textarea {
 .byline {
   margin: 0;
   color: var(--ink-faint);
-  font-size: 12px;
-  letter-spacing: 0.14em;
+  font-size: 11px;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
 .masthead p {
-  margin: 12px 0 0;
+  margin: 10px 0 0;
   color: var(--ink-soft);
-  font-size: 15px;
+  font-size: 14.5px;
   line-height: 1.6;
 }
 
 .studio {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 288px;
-  gap: 28px;
+  grid-template-columns: minmax(0, 1fr) 272px;
+  gap: 24px;
   align-items: start;
 }
 
 /* Composer ---------------------------------------------------------------- */
 
+/* One card holds the language tabs, the script and the phrasing, so the text
+   sits inside something instead of floating on the page. */
 .composer {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-card);
+  background: var(--card);
 }
 
 .languages {
   display: flex;
-  gap: 24px;
+  gap: 22px;
+  padding: 0 22px;
   border-bottom: 1px solid var(--rule);
 }
 
 .language {
-  padding: 0 0 10px;
+  padding: 13px 0 11px;
   border: 0;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   background: none;
   color: var(--ink-faint);
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
   transition: color 140ms ease;
 }
@@ -153,12 +169,12 @@ textarea {
 
 .script {
   width: 100%;
-  min-height: 288px;
-  padding: 24px 0 20px;
+  min-height: 190px;
+  padding: 20px 22px 22px;
   border: 0;
   background: none;
-  font-size: 18px;
-  line-height: 1.75;
+  font-size: 17px;
+  line-height: 1.7;
   resize: vertical;
 }
 
@@ -170,19 +186,20 @@ textarea {
   color: var(--ink-faint);
 }
 
-/* Phrasing preview -------------------------------------------------------- */
+/* Phrasing ---------------------------------------------------------------- */
 
 .phrasing {
   border-top: 1px solid var(--rule);
+  background: var(--raised);
 }
 
 .phrasing summary {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 0;
+  gap: 9px;
+  padding: 11px 22px;
   color: var(--ink-faint);
-  font-size: 12px;
+  font-size: 12.5px;
   cursor: pointer;
   list-style: none;
 }
@@ -196,8 +213,8 @@ textarea {
 }
 
 .chevron {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   transform: rotate(-45deg);
@@ -223,12 +240,11 @@ textarea {
 }
 
 .phrasing ol {
-  padding-bottom: 14px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin: 0;
-  padding: 0;
+  padding: 0 22px 16px;
   list-style: none;
 }
 
@@ -241,13 +257,13 @@ textarea {
 
 .clause {
   overflow: hidden;
-  max-width: 34ch;
+  max-width: 30ch;
   padding: 4px 9px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--rule-strong);
   border-radius: var(--radius);
   background: var(--card);
   color: var(--ink-soft);
-  font-size: 13px;
+  font-size: 12.5px;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -261,11 +277,11 @@ textarea {
 
 /* Once a render is under way, each clause reports where it has got to. */
 .phrasing li.done .clause {
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .phrasing li.waiting .clause {
-  opacity: 0.5;
+  opacity: 0.45;
   border-style: dashed;
 }
 
@@ -279,7 +295,7 @@ textarea {
 .settings {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 26px;
 }
 
 .settings fieldset {
@@ -289,26 +305,26 @@ textarea {
 }
 
 .settings legend {
-  padding: 0 0 12px;
+  padding: 0 0 10px;
   color: var(--ink-faint);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
 .voices {
   display: grid;
-  gap: 8px;
+  gap: 7px;
 }
 
 .voice {
   display: grid;
-  gap: 4px;
-  padding: 13px 15px;
+  gap: 3px;
+  padding: 11px 13px;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
-  background: var(--card);
+  background: transparent;
   text-align: left;
   cursor: pointer;
   transition:
@@ -318,32 +334,37 @@ textarea {
 
 .voice:hover {
   border-color: var(--rule-strong);
+  background: var(--card);
 }
 
 .voice[aria-pressed='true'] {
   border-color: var(--accent);
-  box-shadow: inset 2px 0 0 var(--accent);
+  background: var(--accent-wash);
 }
 
 .voice strong {
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
+}
+
+.voice[aria-pressed='true'] strong {
+  color: var(--accent-ink);
 }
 
 .voice span {
   color: var(--ink-soft);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12.5px;
+  line-height: 1.4;
 }
 
 .dials {
   display: grid;
-  gap: 20px;
+  gap: 18px;
 }
 
 .dial {
   display: grid;
-  gap: 7px;
+  gap: 6px;
 }
 
 .dial-head {
@@ -353,24 +374,24 @@ textarea {
 }
 
 .dial-head strong {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 500;
 }
 
 .dial-head output {
   color: var(--accent-ink);
-  font-size: 13px;
+  font-size: 12.5px;
   font-variant-numeric: tabular-nums;
 }
 
 .dial small {
   color: var(--ink-faint);
-  font-size: 12px;
+  font-size: 11.5px;
 }
 
 input[type='range'] {
   width: 100%;
-  height: 18px;
+  height: 16px;
   margin: 0;
   background: none;
   cursor: pointer;
@@ -379,21 +400,21 @@ input[type='range'] {
 }
 
 input[type='range']::-webkit-slider-runnable-track {
-  height: 2px;
-  border-radius: 2px;
+  height: 3px;
+  border-radius: 3px;
   background: var(--rule-strong);
 }
 
 input[type='range']::-moz-range-track {
-  height: 2px;
-  border-radius: 2px;
+  height: 3px;
+  border-radius: 3px;
   background: var(--rule-strong);
 }
 
 input[type='range']::-webkit-slider-thumb {
-  width: 14px;
-  height: 14px;
-  margin-top: -6px;
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
   border: 0;
   border-radius: 50%;
   background: var(--accent);
@@ -402,8 +423,8 @@ input[type='range']::-webkit-slider-thumb {
 }
 
 input[type='range']::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border: 0;
   border-radius: 50%;
   background: var(--accent);
@@ -414,10 +435,9 @@ input[type='range']::-moz-range-thumb {
 .transport {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 18px;
+  gap: 16px;
   align-items: center;
-  margin-top: auto;
-  padding-top: 22px;
+  padding-top: 20px;
   border-top: 1px solid var(--rule);
 }
 
@@ -425,29 +445,32 @@ input[type='range']::-moz-range-thumb {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  padding: 12px 20px;
+  padding: 11px 18px;
   border: 0;
   border-radius: var(--radius);
   background: var(--accent);
-  color: #fbfdfc;
-  font-size: 15px;
+  color: var(--on-accent);
+  font-size: 14.5px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 140ms ease;
-}
-
-@media (prefers-color-scheme: dark) {
-  .speak {
-    color: #0c1512;
-  }
+  transition:
+    background 140ms ease,
+    opacity 140ms ease;
 }
 
 .speak:hover:not(:disabled) {
   background: var(--accent-ink);
 }
 
+@media (prefers-color-scheme: dark) {
+  .speak:hover:not(:disabled) {
+    background: var(--accent-ink);
+    color: var(--on-accent);
+  }
+}
+
 .speak:disabled {
-  background: var(--rule-strong);
+  background: var(--rule);
   color: var(--ink-faint);
   cursor: not-allowed;
 }
@@ -458,7 +481,7 @@ input[type='range']::-moz-range-thumb {
 
 .readout {
   display: grid;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
 }
 
@@ -468,7 +491,7 @@ input[type='range']::-moz-range-thumb {
   gap: 10px;
   margin: 0;
   color: var(--ink-soft);
-  font-size: 13px;
+  font-size: 12.5px;
 }
 
 .report.muted {
@@ -481,7 +504,7 @@ input[type='range']::-moz-range-thumb {
 
 /* Determinate only — it reports real work, never a decorative pulse. */
 .bar {
-  flex: 0 0 128px;
+  flex: 0 0 120px;
   height: 3px;
   border-radius: 3px;
   background: var(--rule);
@@ -495,15 +518,67 @@ input[type='range']::-moz-range-thumb {
   transition: width 200ms ease;
 }
 
-.readout audio {
-  width: 100%;
+/* Player ------------------------------------------------------------------ */
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 11px;
   max-width: 420px;
-  height: 32px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--card);
+}
+
+.player-toggle {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+
+.player-toggle svg {
+  fill: currentColor;
+}
+
+.scrub {
+  flex: 1;
+  height: 14px;
+}
+
+.scrub::-webkit-slider-runnable-track {
+  height: 3px;
+  background: var(--rule-strong);
+}
+
+.scrub::-webkit-slider-thumb {
+  width: 10px;
+  height: 10px;
+  margin-top: -3.5px;
+}
+
+.scrub::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+}
+
+.player time {
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
 }
 
 .download {
   color: var(--ink-soft);
-  font-size: 14px;
+  font-size: 13.5px;
   text-decoration-color: var(--rule-strong);
   text-underline-offset: 4px;
 }
@@ -523,17 +598,17 @@ input[type='range']::-moz-range-thumb {
 @media (max-width: 860px) {
   .studio {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 20px;
   }
 
   .settings {
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 28px;
+    gap: 26px;
   }
 
   .settings fieldset {
-    flex: 1 1 260px;
+    flex: 1 1 250px;
   }
 
   .transport {
@@ -541,22 +616,30 @@ input[type='range']::-moz-range-thumb {
     justify-items: start;
   }
 
-  .readout {
+  .readout,
+  .player {
     width: 100%;
   }
 }
 
 @media (max-width: 540px) {
   .script {
-    min-height: 220px;
-    font-size: 17px;
+    min-height: 200px;
+    font-size: 16px;
   }
 
   .languages {
-    gap: 18px;
+    gap: 16px;
+    padding: 0 16px;
+  }
+
+  .script,
+  .phrasing summary,
+  .phrasing ol {
+    padding-inline: 16px;
   }
 
   .clause {
-    max-width: 22ch;
+    max-width: 20ch;
   }
 }

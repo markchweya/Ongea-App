@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import {
   DEFAULT_LANGUAGE,
@@ -149,7 +149,7 @@ export default function App() {
 
         <div className="readout">
           <Report status={status} clip={clip} voiceName={voice.name} />
-          {clip && !busy && <audio controls src={clip.url} />}
+          {clip && !busy && <Player key={clip.url} src={clip.url} />}
         </div>
 
         <a
@@ -293,6 +293,75 @@ function Progress({ label, ratio }: { label: string; ratio: number }) {
   )
 }
 
+/**
+ * The browser's own audio controls are the one part of the page nobody designed,
+ * so this is a plain transport: play, scrub, elapsed.
+ */
+function Player({ src }: { src: string }) {
+  const element = useRef<HTMLAudioElement>(null)
+  const [playing, setPlaying] = useState(false)
+  const [at, setAt] = useState(0)
+  const [length, setLength] = useState(0)
+
+  function toggle() {
+    const audio = element.current
+    if (!audio) return
+    if (audio.paused) void audio.play()
+    else audio.pause()
+  }
+
+  function seek(seconds: number) {
+    const audio = element.current
+    if (audio) audio.currentTime = seconds
+    setAt(seconds)
+  }
+
+  return (
+    <div className="player">
+      <button className="player-toggle" type="button" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'}>
+        {playing ? <PauseMark /> : <PlayMark />}
+      </button>
+
+      <input
+        className="scrub"
+        type="range"
+        min={0}
+        max={length || 1}
+        step={0.01}
+        value={at}
+        aria-label="Position"
+        onChange={(event) => seek(Number(event.target.value))}
+      />
+
+      <time>
+        {clock(at)} / {clock(length)}
+      </time>
+
+      <audio
+        ref={element}
+        src={src}
+        hidden
+        onLoadedMetadata={(event) => setLength(orZero(event.currentTarget.duration))}
+        onDurationChange={(event) => setLength(orZero(event.currentTarget.duration))}
+        onTimeUpdate={(event) => setAt(event.currentTarget.currentTime)}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+      />
+    </div>
+  )
+}
+
+/** Blob durations arrive as Infinity in some browsers until the clip is seeked. */
+function orZero(seconds: number): number {
+  return Number.isFinite(seconds) ? seconds : 0
+}
+
+function clock(seconds: number): string {
+  const whole = Math.max(0, Math.floor(seconds))
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
+}
+
 function formatSemitones(value: number): string {
   if (Math.abs(value) < 0.05) return 'centred'
   return `${value > 0 ? '+' : '−'}${Math.abs(value).toFixed(1)} st`
@@ -300,8 +369,16 @@ function formatSemitones(value: number): string {
 
 function PlayMark() {
   return (
-    <svg viewBox="0 0 12 14" width="12" height="14" aria-hidden="true">
+    <svg viewBox="0 0 12 14" width="11" height="13" aria-hidden="true">
       <path d="M1 1.4v11.2a.6.6 0 0 0 .93.5l8.4-5.6a.6.6 0 0 0 0-1L1.93.9A.6.6 0 0 0 1 1.4Z" />
+    </svg>
+  )
+}
+
+function PauseMark() {
+  return (
+    <svg viewBox="0 0 12 14" width="11" height="13" aria-hidden="true">
+      <path d="M1.6 1h2.2v12H1.6zM8.2 1h2.2v12H8.2z" />
     </svg>
   )
 }
